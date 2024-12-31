@@ -27,6 +27,8 @@ public class PresentationRequestDto {
     @Positive
     private double idealMaxTime;
 
+    private String updatedAtText; // "1일전"
+
     private boolean showMeOnScreen;
     private boolean showTimeOnScreen;
 

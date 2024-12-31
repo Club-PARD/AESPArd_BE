@@ -49,4 +49,6 @@ public class Practice {
 
     @OneToMany(mappedBy = "practice", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Analysis> analyses = new ArrayList<>();
+
+
 }

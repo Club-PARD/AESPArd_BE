@@ -69,7 +69,7 @@ public class PresentationController {
         })
         @GetMapping("/user/{userId}/favorites")
         public ResponseEntity<List<PresentationCellDto>> getPresentationsByFavorite(@PathVariable UUID userId) {
-                List<PresentationCellDto> presentations = presentationService.getPresentationsSortedByFavorite(userId);
+                List<PresentationCellDto> presentations = presentationService.getFavoritesByCreatedAt(userId);
                 return ResponseEntity.ok(presentations);
         }
 
@@ -90,11 +90,12 @@ public class PresentationController {
                         @ApiResponse(responseCode = "204", description = "발표가 성공적으로 삭제되었습니다."),
                         @ApiResponse(responseCode = "404", description = "발표를 찾을 수 없습니다.")
         })
-        @DeleteMapping("/one-delete")
+        @DeleteMapping("/one-delete/{presentationId}")
         public ResponseEntity<Void> deletePresentation(@PathVariable UUID presentationId) {
                 presentationService.deletePresentation(presentationId);
                 return ResponseEntity.noContent().build();
         }
+
 
         @Operation(summary = "특정 사용자의 **모든** 발표 삭제 ( My ) 🚨✅", description = "유저 안에 모든. 모오오오듬 발표 연습 싹 날라가니까 조심")
         @ApiResponses(value = {
@@ -118,28 +119,22 @@ public class PresentationController {
                 if (presentationIds == null || presentationIds.isEmpty()) {
                         throw new IllegalArgumentException("발표 ID 목록이 비어 있습니다.");
                 }
+
                 presentationService.deleteSelectedPresentations(presentationIds);
                 return ResponseEntity.noContent().build();
         }
 
-        @GetMapping("/search")
+        @GetMapping("/search/{userId}")
         @Operation(summary = "검색 기능 !! ( Search ) ✅", description = "기본 정렬은 시간순이고, 빈키워드는 다 불러옴 !")
         @ApiResponses(value = {
                 @ApiResponse(responseCode = "200", description = "성공적으로 불러옴~"),
                 @ApiResponse(responseCode = "400", description = "잘못된 요청!")
         })
         public ResponseEntity<List<PresentationCellDto>> searchPresentations(
-                @RequestParam(required = false) String searchTerm) {
-                // Assume the userId is passed from the front-end (replace with actual authentication handling)
-                UUID userId = UUID.fromString("ae16a39a-1be2-48a6-85c9-b89e9dea2ea7");
-
-                // If searchTerm is empty or null, fetch all presentations
-                List<PresentationCellDto> presentations;
-                if (searchTerm == null || searchTerm.trim().isEmpty()) {
-                        presentations = presentationService.getAllPresentations(userId);
-                } else {
-                        presentations = presentationService.searchPresentationsByName(userId, searchTerm);
-                }
+                @PathVariable UUID userId,
+                @RequestParam(required = false) String searchTerm
+        ) {
+                List<PresentationCellDto> presentations = presentationService.searchPresentationsByName(userId, searchTerm);
                 return ResponseEntity.ok(presentations);
         }
 

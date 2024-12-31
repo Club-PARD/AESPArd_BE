@@ -21,6 +21,10 @@ public interface PresentationRepo extends JpaRepository<Presentation, UUID> {
     @EntityGraph(attributePaths = "practices")
     List<Presentation> findAllByUser_UserIdOrderByUpdatedAtDesc(UUID userId);
 
+    @Query("SELECT p FROM Presentation p WHERE p.user.userId = :userId ORDER BY p.createdAt DESC")
+    Optional<Presentation> findTopByUser_UserIdOrderByCreatedAtDesc(@Param("userId") UUID userId);
+
+
     @EntityGraph(attributePaths = "practices")
     List<Presentation> findAllByUser_UserIdOrderByToggleFavoriteDescUpdatedAtDesc(UUID userId);
 
@@ -28,19 +32,25 @@ public interface PresentationRepo extends JpaRepository<Presentation, UUID> {
 
     List<Presentation> findAllByUser_UserId(UUID userId);
 
-    @EntityGraph(attributePaths = { "practices.analysis", "practices.audioFile" })
+    @EntityGraph(attributePaths = { "practices.audioFile" })
     Optional<Presentation> findById(UUID presentationId);
+
 
     @Modifying
     @Query("DELETE FROM Presentation p WHERE p.user.userId = :userId")
     void deleteAllByUserId(@Param("userId") UUID userId);
 
+
     @Modifying
     @Query("DELETE FROM Presentation p WHERE p.presentationId IN :ids")
     void deleteAllByIdIn(@Param("ids") List<UUID> ids);
 
+
     List<Presentation> findByUser_UserIdAndPresentationNameContainingIgnoreCaseOrderByUpdatedAtDesc(UUID userId,
             String presentationName);
 
-    Optional<Presentation> findTopByUser_UserIdOrderByCreatedAtDesc(UUID userId);
+    @Query("SELECT p FROM Presentation p WHERE p.user.userId = :userId AND p.toggleFavorite = true ORDER BY p.createdAt DESC")
+    List<Presentation> findFavoritesOrderByCreatedAt(@Param("userId") UUID userId);
+
+
 }

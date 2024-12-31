@@ -76,25 +76,23 @@ public class PresentationService {
     }
 
 
-
-    public List<PresentationCellDto> getPresentationsSortedByFavorite(UUID userId) {
-        return presentationRepo.findAllByUser_UserIdOrderByToggleFavoriteDescUpdatedAtDesc(userId)
-                .stream()
-                .map(this::mapToPresentationCellDto)
-                .collect(Collectors.toList());
-    }
-
     @Transactional
     public boolean toggleFavorite(UUID presentationId) {
         Presentation presentation = presentationRepo.findById(presentationId)
                 .orElseThrow(() -> new EntityNotFoundException("Presentation not found for ID: " + presentationId));
 
         presentation.setToggleFavorite(!presentation.isToggleFavorite());
-
-        presentationRepo.save(presentation);
-
-        return presentation.isToggleFavorite();
+        presentation.setUpdatedAt(LocalDateTime.now()); // Ensure updatedAt is refreshed
+        return presentationRepo.save(presentation).isToggleFavorite();
     }
+
+    public List<PresentationCellDto> getFavoritesByCreatedAt(UUID userId) {
+        return presentationRepo.findFavoritesOrderByCreatedAt(userId)
+                .stream()
+                .map(this::mapToPresentationCellDto)
+                .collect(Collectors.toList());
+    }
+
 
 
 
@@ -113,10 +111,13 @@ public class PresentationService {
                 .totalScore(presentation.getTotalScore())
                 .totalPractices(presentation.getTotalPractices())
                 .updatedAtText(formatUpdatedAt(presentation.getUpdatedAt()))
-                .idealMinTime(presentation.getIdealMinTime()) // Map min time
+                .idealMinTime(presentation.getIdealMinTime())
                 .idealMaxTime(presentation.getIdealMaxTime())
+                .showMeOnScreen(presentation.isShowMeOnScreen())
+                .showTimeOnScreen(presentation.isShowTimeOnScreen())
                 .build();
     }
+
 
     private String formatUpdatedAt(LocalDateTime updatedAt) {
         LocalDateTime now = LocalDateTime.now();
@@ -167,16 +168,9 @@ public class PresentationService {
                     .collect(Collectors.toList());
         }
 
-        // Map to DTOs
+        // Map to DTOs with proper updatedAtText
         return presentations.stream()
-                .map(presentation -> PresentationCellDto.builder()
-                        .presentationId(presentation.getPresentationId())
-                        .presentationName(presentation.getPresentationName())
-
-                        .toggleFavorite(presentation.isToggleFavorite())
-                        .totalPractices(presentation.getTotalPractices())
-                        .totalScore(presentation.getTotalScore())
-                        .build())
+                .map(this::mapToPresentationCellDto) // Use the common mapping method
                 .collect(Collectors.toList());
     }
 
