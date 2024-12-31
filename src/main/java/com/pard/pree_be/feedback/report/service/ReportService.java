@@ -9,10 +9,15 @@ import org.springframework.stereotype.Service;
 public class ReportService {
 
     /**
-     * Generate report for duration metric.
+     * Generate a report for the duration metric.
      */
     public Report generateDurationReport(double duration) {
         MetricStandard standard = ScoringStandards.getStandard("duration");
+
+        if (standard == null) {
+            throw new IllegalArgumentException("No scoring standard found for duration");
+        }
+
         String feedbackMessage;
         int score;
 
@@ -29,11 +34,12 @@ public class ReportService {
             score = 100;
         }
 
-        return buildReport("duration", duration, score, feedbackMessage);
+        return buildReport("duration", duration, Math.max(score, 0), feedbackMessage);
     }
 
+
     /**
-     * Generate report for speech speed metric.
+     * Generate a report for the speech speed metric.
      */
     public Report generateSpeechSpeedReport(double speechSpeed) {
         MetricStandard standard = ScoringStandards.getStandard("speechSpeed");
@@ -52,12 +58,11 @@ public class ReportService {
             feedbackMessage = "완벽한 속도에요! 이 속도를 유지하세요.";
         }
 
-        score = Math.max(score, 0);
-        return buildReport("speechSpeed", speechSpeed, score, feedbackMessage);
+        return buildReport("speechSpeed", speechSpeed, Math.max(score, 0), feedbackMessage);
     }
 
     /**
-     * Generate report for decibel metric.
+     * Generate a report for the decibel metric.
      */
     public Report generateDecibelReport(double decibel) {
         MetricStandard standard = ScoringStandards.getStandard("decibel");
@@ -74,12 +79,11 @@ public class ReportService {
             feedbackMessage = "발표에 딱 맞는 목소리 크기였습니다!";
         }
 
-        score = Math.max(score, 0);
-        return buildReport("decibel", decibel, score, feedbackMessage);
+        return buildReport("decibel", decibel, Math.max(score, 0), feedbackMessage);
     }
 
     /**
-     * Generate report for filler count metric.
+     * Generate a report for the filler count metric.
      */
     public Report generateFillerReport(int fillerCount) {
         MetricStandard standard = ScoringStandards.getStandard("fillers");
@@ -94,12 +98,11 @@ public class ReportService {
             feedbackMessage = "의식적으로 발화 지연 표현을 고치려고 노력해보세요!";
         }
 
-        score = Math.max(score, 0);
-        return buildReport("fillers", fillerCount, score, feedbackMessage);
+        return buildReport("fillers", fillerCount, Math.max(score, 0), feedbackMessage);
     }
 
     /**
-     * Generate report for blank count metric.
+     * Generate a report for the blank count metric.
      */
     public Report generateBlankReport(int blankCount) {
         MetricStandard standard = ScoringStandards.getStandard("blanks");
@@ -110,18 +113,17 @@ public class ReportService {
             feedbackMessage = "한 번도 없었어요!";
         } else if (blankCount <= 3) {
             feedbackMessage = "조금만 줄이면 발표 흐름이 더 매끄러워질 거예요.";
-            score -= blankCount * 2;
+            score -= blankCount * 2; // Example: Deduct 2 points per blank within the range 3-5 seconds
         } else {
             feedbackMessage = "너무 많아요. 발표 내용을 더 숙지해보세요.";
-            score -= blankCount * 5;
+            score -= blankCount * 5; // Example: Deduct 5 points per blank above 5 seconds
         }
 
-        score = Math.max(score, 0);
-        return buildReport("blanks", blankCount, score, feedbackMessage);
+        return buildReport("blanks", blankCount, Math.max(score, 0), feedbackMessage);
     }
 
     /**
-     * Generate report for eye tracking percentage metric.
+     * Generate a report for the eye tracking percentage metric.
      */
     public Report generateEyeTrackingReport(int eyePercentage) {
         String feedbackMessage;
@@ -138,8 +140,7 @@ public class ReportService {
             score = 100 - (80 - eyePercentage) * 5;
         }
 
-        score = Math.max(score, 0);
-        return buildReport("eyeTracking", eyePercentage, score, feedbackMessage);
+        return buildReport("eyeTracking", eyePercentage, Math.max(score, 0), feedbackMessage);
     }
 
     /**

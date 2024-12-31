@@ -72,6 +72,7 @@ public class PresentationService {
         presentation.setToggleFavorite(newState);
 
         presentationRepo.save(presentation);
+        presentationRepo.flush();
 
         return newState;
     }
@@ -163,6 +164,7 @@ public class PresentationService {
         // Update presentation practice count
         presentation.setTotalPractices(presentation.getTotalPractices() + 1);
         presentationRepo.save(presentation);
+        presentationRepo.flush();
     }
 
     @Transactional

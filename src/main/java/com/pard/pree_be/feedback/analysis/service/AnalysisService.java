@@ -19,15 +19,19 @@ public class AnalysisService {
     private final ReportRepo reportRepo;
     private final ReportService reportService;
 
+    /**
+     * Generates an analysis for the given practice and creates reports for each feature.
+     */
     public Analysis analyzePractice(Practice practice) {
-        // Simulated/hardcoded values for now
-        double duration = 120.0; // Example duration
-        double speechSpeed = 143.0; // Example speech speed (words per minute)
-        double decibel = 68.0; // Example decibel average
-        int fillerCount = 2; // Example filler count
-        int blankCount = 1; // Example blank count
-        int eyePercentage = 85; // Example eye-tracking percentage
+        // Simulate or retrieve metric values
+        double duration = 120.0; // Example: Duration in seconds
+        double speechSpeed = 143.0; // Example: Words per minute
+        double decibel = 68.0; // Example: Average decibel
+        int fillerCount = 3; // Example: Filler count
+        int blankCount = 2; // Example: Blank count
+        int eyePercentage = 85; // Example: Eye-tracking percentage
 
+        // Create and save Analysis entity
         Analysis analysis = Analysis.builder()
                 .practice(practice)
                 .duration(duration)
@@ -39,10 +43,14 @@ public class AnalysisService {
                 .build();
         Analysis savedAnalysis = analysisRepo.save(analysis);
 
+        // Generate reports for all metrics
         generateReports(savedAnalysis);
         return savedAnalysis;
     }
 
+    /**
+     * Generates reports for all features and links them to the analysis.
+     */
     public void generateReports(Analysis analysis) {
         List<Report> reports = List.of(
                 reportService.generateDurationReport(analysis.getDuration()),
@@ -53,6 +61,7 @@ public class AnalysisService {
                 reportService.generateEyeTrackingReport(analysis.getEyePercentage())
         );
 
+        // Link each report to the analysis and save
         reports.forEach(report -> report.setAnalysis(analysis));
         reportRepo.saveAll(reports);
     }

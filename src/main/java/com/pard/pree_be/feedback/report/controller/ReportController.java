@@ -21,14 +21,16 @@ public class ReportController {
     @GetMapping("/{analysisId}")
     public ResponseEntity<List<ReportResponseDto>> getReportsByAnalysisId(@PathVariable UUID analysisId) {
         List<Report> reports = reportRepo.findByAnalysisId(analysisId);
-        List<ReportResponseDto> response = reports.stream().map(report -> {
-            ReportResponseDto dto = new ReportResponseDto();
-            dto.setName(report.getName());
-            dto.setCounter(report.getCounter());
-            dto.setScore(report.getScore());
-            dto.setFeedbackMessage(report.getFeedbackMessage());
-            return dto;
-        }).collect(Collectors.toList());
+
+        List<ReportResponseDto> response = reports.stream()
+                .map(report -> ReportResponseDto.builder()
+                        .name(report.getName())
+                        .counter(report.getCounter())
+                        .score(report.getScore())
+                        .feedbackMessage(report.getFeedbackMessage())
+                        .build())
+                .collect(Collectors.toList());
+
         return ResponseEntity.ok(response);
     }
 }

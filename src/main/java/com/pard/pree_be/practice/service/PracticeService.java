@@ -1,27 +1,24 @@
 package com.pard.pree_be.practice.service;
 
-import be.tarsos.dsp.AudioDispatcher;
-import be.tarsos.dsp.io.jvm.AudioDispatcherFactory;
 import com.pard.pree_be.feedback.analysis.entity.Analysis;
 import com.pard.pree_be.feedback.analysis.repo.AnalysisRepo;
-import com.pard.pree_be.feedback.analysis.service.AnalysisService;
 import com.pard.pree_be.feedback.report.entity.Report;
 import com.pard.pree_be.feedback.report.repo.ReportRepo;
+import com.pard.pree_be.feedback.report.service.ReportService;
 import com.pard.pree_be.practice.dto.PracticeDto;
-import com.pard.pree_be.practice.dto.PracticeRequestDto;
 import com.pard.pree_be.practice.dto.PracticeResponseDto;
 import com.pard.pree_be.practice.entity.Practice;
 import com.pard.pree_be.practice.repo.PracticeRepo;
-import com.pard.pree_be.presentation.dto.PresentationRequestDto;
 import com.pard.pree_be.presentation.entity.Presentation;
 import com.pard.pree_be.presentation.repo.PresentationRepo;
-import com.pard.pree_be.user.entity.User;
-import com.pard.pree_be.user.repo.UserRepo;
 import com.pard.pree_be.utils.AudioAnalyzer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -31,7 +28,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
-import javax.sound.sampled.*;
 
 @Service
 @RequiredArgsConstructor
@@ -39,10 +35,13 @@ public class PracticeService {
 
     private final PracticeRepo practiceRepo;
     private final PresentationRepo presentationRepo;
-    private final UserRepo userRepo;
     private final AnalysisRepo analysisRepo;
     private final ReportRepo reportRepo;
+    private final ReportService reportService; // Injected ReportService
 
+    /**
+     * Add a new practice to an existing presentation.
+     */
     public PracticeResponseDto addPracticeToExistingPresentation(UUID presentationId, String videoKey, int eyePercentage, MultipartFile audioFile) throws IOException {
         // Find the presentation
         Presentation presentation = presentationRepo.findById(presentationId)
@@ -55,8 +54,7 @@ public class PracticeService {
         // Save audio file
         String audioFilePath = saveAudioFile(audioFile);
 
-
-        // Create practice
+        // Create and save practice
         Practice practice = Practice.builder()
                 .practiceName(practiceName)
                 .presentation(presentation)
@@ -68,6 +66,8 @@ public class PracticeService {
                 .build();
 
         practiceRepo.save(practice);
+
+        // Perform analysis
         performAnalysis(practice, eyePercentage);
 
         return PracticeResponseDto.builder()
@@ -79,6 +79,9 @@ public class PracticeService {
                 .build();
     }
 
+    /**
+     * Add a new practice to the most recent presentation of a user.
+     */
     public Presentation addPracticeToRecentPresentation(UUID userId, String videoKey, int eyePercentage, MultipartFile audioFile) throws IOException {
         // Fetch the most recent presentation
         Presentation recentPresentation = presentationRepo.findTopByUser_UserIdOrderByCreatedAtDesc(userId)
@@ -113,77 +116,9 @@ public class PracticeService {
         return presentationRepo.save(recentPresentation);
     }
 
-
-    private double getAudioDuration(String audioFilePath) throws Exception {
-        File audioFile = new File(audioFilePath);
-        AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(audioFile);
-        AudioFormat format = audioInputStream.getFormat();
-        long frames = audioInputStream.getFrameLength();
-        return (frames + 0.0) / format.getFrameRate();
-    }
-
-
-    private void performAnalysis(Practice practice, int eyePercentage) {
-        try {
-            // Analyze audio
-            double decibel = AudioAnalyzer.calculateAverageDecibel(practice.getAudioFilePath());
-            double duration = getAudioDuration(practice.getAudioFilePath()); // Calculate duration
-
-            // Save analysis data
-            Analysis analysis = Analysis.builder()
-                    .practice(practice)
-                    .decibel(decibel)
-                    .duration(duration)
-                    .eyePercentage(eyePercentage)
-                    .build();
-
-            analysisRepo.save(analysis);
-
-            // Generate report based on analysis
-            generateReportForAnalysis(analysis);
-        } catch (Exception e) {
-            throw new RuntimeException("Failed to analyze practice: " + e.getMessage());
-        }
-    }
-
-    private void generateReportForAnalysis(Analysis analysis) {
-        int score = calculateScore(analysis); // Implement scoring logic
-
-        Report report = Report.builder()
-                .analysis(analysis)
-                .score(score)
-                .feedbackMessage("Great job!")
-                .build();
-
-        reportRepo.save(report);
-    }
-
-    private int calculateScore(Analysis analysis) {
-        // Example scoring logic
-        int score = 100;
-        if (analysis.getDecibel() < -30) {
-            score -= 20;
-        }
-        if (analysis.getDuration() < 60) {
-            score -= 10;
-        }
-        return score;
-    }
-
-
-    private String saveAudioFile(MultipartFile audioFile) throws IOException {
-        Path audioPath = Paths.get("uploads");
-        
-        
-        if (!Files.exists(audioPath)) {
-            Files.createDirectories(audioPath);
-        }
-        String audioFileName = UUID.randomUUID() + ".wav";
-        Path filePath = audioPath.resolve(audioFileName);
-        Files.write(filePath, audioFile.getBytes());
-        return filePath.toString();
-    }
-
+    /**
+     * Retrieve practices by presentation ID.
+     */
     public List<PracticeDto> getPracticesByPresentationId(UUID presentationId) {
         return practiceRepo.findByPresentation_PresentationId(presentationId).stream()
                 .map(practice -> PracticeDto.builder()
@@ -195,25 +130,88 @@ public class PracticeService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Retrieve recent practice scores for a presentation.
+     */
     public List<Integer> getRecentPracticeScores(UUID presentationId) {
         return practiceRepo.findTop5ByPresentation_PresentationIdOrderByCreatedAtDesc(presentationId).stream()
                 .map(Practice::getTotalScore)
                 .collect(Collectors.toList());
     }
 
-    public double analyzeAudioDecibel(String audioFilePath) throws Exception {
-        return AudioAnalyzer.calculateAverageDecibel(audioFilePath);
+    /**
+     * Perform analysis on the practice.
+     */
+    private void performAnalysis(Practice practice, int eyePercentage) {
+        try {
+            double decibel = AudioAnalyzer.calculateAverageDecibel(practice.getAudioFilePath());
+            double duration = getAudioDuration(practice.getAudioFilePath());
+
+            int fillerCount = 3;
+            int blankCount = 2;
+            double speechSpeed = 143.0;
+
+            Analysis analysis = Analysis.builder()
+                    .practice(practice)
+                    .decibel(decibel)
+                    .duration(duration)
+                    .eyePercentage(eyePercentage)
+                    .fillerCount(fillerCount)
+                    .blankCount(blankCount)
+                    .speechSpeed(speechSpeed)
+                    .build();
+
+            analysisRepo.save(analysis);
+
+            generateReportsForAnalysis(analysis);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to analyze practice: " + e.getMessage(), e);
+        }
     }
 
-    public void processPracticeWithDecibel(MultipartFile audioFile, UUID presentationId) throws Exception {
-        // Save the audio file locally
-        String savedPath = saveAudioFile(audioFile);
 
-        // Analyze decibel
-        double averageDecibel = analyzeAudioDecibel(savedPath);
+    /**
+     * Generate reports for the analysis.
+     */
+    private void generateReportsForAnalysis(Analysis analysis) {
+        List<Report> reports = List.of(
+                reportService.generateDurationReport(analysis.getDuration()),
+                reportService.generateSpeechSpeedReport(analysis.getSpeechSpeed()),
+                reportService.generateDecibelReport(analysis.getDecibel()),
+                reportService.generateFillerReport(analysis.getFillerCount()),
+                reportService.generateBlankReport(analysis.getBlankCount()),
+                reportService.generateEyeTrackingReport(analysis.getEyePercentage())
+        );
 
-        System.out.println("Average Decibel: " + averageDecibel);
+        reports.forEach(report -> {
+            report.setAnalysis(analysis);
+            reportRepo.save(report);
+        });
+    }
 
-        // Process the practice as needed (e.g., save in DB, associate with Presentation)
+    /**
+     * Calculate audio duration.
+     */
+    private double getAudioDuration(String audioFilePath) throws Exception {
+        File audioFile = new File(audioFilePath);
+        AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(audioFile);
+        AudioFormat format = audioInputStream.getFormat();
+        long frames = audioInputStream.getFrameLength();
+        return (frames + 0.0) / format.getFrameRate();
+    }
+
+    /**
+     * Save audio file to disk.
+     */
+    private String saveAudioFile(MultipartFile audioFile) throws IOException {
+        Path audioPath = Paths.get("uploads");
+
+        if (!Files.exists(audioPath)) {
+            Files.createDirectories(audioPath);
+        }
+        String audioFileName = UUID.randomUUID() + ".wav";
+        Path filePath = audioPath.resolve(audioFileName);
+        Files.write(filePath, audioFile.getBytes());
+        return filePath.toString();
     }
 }

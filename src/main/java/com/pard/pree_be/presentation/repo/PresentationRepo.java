@@ -18,8 +18,10 @@ public interface PresentationRepo extends JpaRepository<Presentation, UUID> {
 
     boolean existsByUser_UserIdAndPresentationName(UUID userId, String presentationName);
 
+    @EntityGraph(attributePaths = "practices")
     List<Presentation> findAllByUser_UserIdOrderByUpdatedAtDesc(UUID userId);
 
+    @EntityGraph(attributePaths = "practices")
     List<Presentation> findAllByUser_UserIdOrderByToggleFavoriteDescUpdatedAtDesc(UUID userId);
 
     List<Presentation> findAllByUser_UserId(UUID userId);

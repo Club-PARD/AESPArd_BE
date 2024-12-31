@@ -41,17 +41,6 @@ public class PracticeController {
             @RequestParam(required = false) Integer eyePercentage,
             @RequestParam(required = false) MultipartFile audioFile) throws IOException {
 
-        if (videoKey == null || videoKey.isEmpty()) {
-            throw new IllegalArgumentException("videoKey is missing.");
-        }
-        if (eyePercentage == null) {
-            throw new IllegalArgumentException("eyePercentage is missing.");
-        }
-        if (audioFile == null || audioFile.isEmpty()) {
-            throw new IllegalArgumentException("audioFile is missing.");
-        }
-
-
         PracticeResponseDto response = practiceService.addPracticeToExistingPresentation(presentationId, videoKey, eyePercentage, audioFile);
         return ResponseEntity.status(201).body(response);
     }
