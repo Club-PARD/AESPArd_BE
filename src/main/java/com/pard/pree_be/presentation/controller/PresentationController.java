@@ -97,6 +97,7 @@ public class PresentationController {
         }
 
 
+
         @Operation(summary = "특정 사용자의 **모든** 발표 삭제 ( My ) 🚨✅", description = "유저 안에 모든. 모오오오듬 발표 연습 싹 날라가니까 조심")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "204", description = "모든 발표가 성공적으로 삭제되었습니다."),
@@ -108,6 +109,7 @@ public class PresentationController {
                 return ResponseEntity.noContent().build();
         }
 
+
         @Operation(summary = "선택한 모든 발표 삭제 ( Home )✅", description = "선택된 발표 ID 목록을 받아 해당 발표를 모두 삭제합니다.")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "204", description = "선택된 발표가 성공적으로 삭제되었습니다."),
@@ -116,13 +118,10 @@ public class PresentationController {
         })
         @DeleteMapping("/batch-delete")
         public ResponseEntity<Void> deleteSelectedPresentations(@RequestBody List<UUID> presentationIds) {
-                if (presentationIds == null || presentationIds.isEmpty()) {
-                        throw new IllegalArgumentException("발표 ID 목록이 비어 있습니다.");
-                }
-
                 presentationService.deleteSelectedPresentations(presentationIds);
                 return ResponseEntity.noContent().build();
         }
+
 
         @GetMapping("/search/{userId}")
         @Operation(summary = "검색 기능 !! ( Search ) ✅", description = "기본 정렬은 시간순이고, 빈키워드는 다 불러옴 !")

@@ -41,6 +41,7 @@ public interface PresentationRepo extends JpaRepository<Presentation, UUID> {
     void deleteAllByUserId(@Param("userId") UUID userId);
 
 
+
     @Modifying
     @Query("DELETE FROM Presentation p WHERE p.presentationId IN :ids")
     void deleteAllByIdIn(@Param("ids") List<UUID> ids);

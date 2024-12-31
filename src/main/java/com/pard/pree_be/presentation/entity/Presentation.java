@@ -52,6 +52,7 @@ public class Presentation {
 
 
 
+
     public void incrementTotalPractices() {
         this.totalPractices++;
     }

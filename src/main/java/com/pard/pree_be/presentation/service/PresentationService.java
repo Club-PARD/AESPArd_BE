@@ -124,35 +124,33 @@ public class PresentationService {
         long daysDiff = ChronoUnit.DAYS.between(updatedAt, now);
 
         if (daysDiff == 0)
-            return "오늘"; // "Today"
-        return daysDiff + "일전"; // e.g., "1 day ago"
+            return "오늘";
+        return daysDiff + "일전";
     }
 
+    @Transactional
     public void deletePresentation(UUID presentationId) {
         Presentation presentation = presentationRepo.findById(presentationId)
-                .orElseThrow(() -> new IllegalArgumentException("Presentation not found"));
-
+                .orElseThrow(() -> new IllegalArgumentException("Presentation not found for ID: " + presentationId));
         presentationRepo.delete(presentation);
     }
 
+
     @Transactional
     public void deleteAllPresentationsForUser(UUID userId) {
-        userRepo.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("User not found for ID: " + userId));
-        presentationRepo.deleteAllByUserId(userId);
+        List<Presentation> presentations = presentationRepo.findAllByUser_UserId(userId);
+        presentationRepo.deleteAll(presentations);
     }
 
-    // TODO: if nothing matchs 아무것도 보내지 말게 해야함 ㅋㅋㅋ
     @Transactional
     public void deleteSelectedPresentations(List<UUID> presentationIds) {
         List<Presentation> presentations = presentationRepo.findAllById(presentationIds);
-
         if (presentations.isEmpty()) {
             throw new IllegalArgumentException("No presentations found for the given IDs.");
         }
-
-        presentations.forEach(presentationRepo::delete); // DELETE cascade
+        presentationRepo.deleteAll(presentations);
     }
+
 
     @Transactional
     public List<PresentationCellDto> searchPresentationsByName(UUID userId, String searchTerm) {
