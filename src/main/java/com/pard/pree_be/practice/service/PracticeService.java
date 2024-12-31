@@ -43,18 +43,13 @@ public class PracticeService {
      * Add a new practice to an existing presentation.
      */
     public PracticeResponseDto addPracticeToExistingPresentation(UUID presentationId, String videoKey, int eyePercentage, MultipartFile audioFile) throws IOException {
-        // Find the presentation
         Presentation presentation = presentationRepo.findById(presentationId)
                 .orElseThrow(() -> new IllegalArgumentException("Presentation not found"));
 
-        // Generate practice name
         long practiceCount = practiceRepo.countByPresentation_PresentationId(presentationId) + 1;
         String practiceName = practiceCount + "번째 연습";
-
-        // Save audio file
         String audioFilePath = saveAudioFile(audioFile);
 
-        // Create and save practice
         Practice practice = Practice.builder()
                 .practiceName(practiceName)
                 .presentation(presentation)
@@ -67,7 +62,6 @@ public class PracticeService {
 
         practiceRepo.save(practice);
 
-        // Perform analysis
         performAnalysis(practice, eyePercentage);
 
         return PracticeResponseDto.builder()
@@ -78,6 +72,7 @@ public class PracticeService {
                 .videoKey(practice.getVideoKey())
                 .build();
     }
+
 
     /**
      * Add a new practice to the most recent presentation of a user.
@@ -134,6 +129,23 @@ public class PracticeService {
                 .collect(Collectors.toList());
     }
 
+    public PracticeDto getMostRecentPracticeByUser(UUID userId) {
+        Practice practice = practiceRepo.findMostRecentPracticeByUserId(userId)
+                .orElseThrow(() -> new IllegalArgumentException("No recent practice found for the user."));
+
+        return PracticeDto.builder()
+                .id(practice.getId())
+                .practiceName(practice.getPracticeName())
+                .createdAt(practice.getCreatedAt())
+                .totalScore(practice.getTotalScore())
+                .analysisId(practice.getAnalyses() != null && !practice.getAnalyses().isEmpty()
+                        ? practice.getAnalyses().get(0).getId()
+                        : null)
+                .videoKey(practice.getVideoKey())
+                .build();
+    }
+
+
 
 
     /**
@@ -144,6 +156,7 @@ public class PracticeService {
                 .map(Practice::getTotalScore)
                 .collect(Collectors.toList());
     }
+
 
     /**
      * Perform analysis on the practice.
@@ -219,14 +232,6 @@ public class PracticeService {
         Path filePath = audioPath.resolve(audioFileName);
         Files.write(filePath, audioFile.getBytes());
         return filePath.toString();
-    }
-
-    public UUID getAnalysisIdByPracticeId(UUID practiceId) {
-        Analysis analysis = analysisRepo.findByPracticeId(practiceId);
-        if (analysis == null) {
-            throw new IllegalArgumentException("No analysis found for the given practice ID.");
-        }
-        return analysis.getId();
     }
 
 }
