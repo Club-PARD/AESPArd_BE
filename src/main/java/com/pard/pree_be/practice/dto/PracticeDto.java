@@ -13,4 +13,5 @@ public class PracticeDto {
     private String practiceName;
     private LocalDateTime createdAt;
     private int totalScore;
+    private UUID analysisId;
 }

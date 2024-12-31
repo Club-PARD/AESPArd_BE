@@ -10,6 +10,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.hibernate.annotations.DialectOverride.ColumnDefault;
+
 @Getter
 @Setter
 @Entity
@@ -39,10 +41,10 @@ public class Presentation {
     private boolean showMeOnScreen;
     private boolean showTimeOnScreen;
 
-    @Column(nullable = false)
+    @Column
     private double idealMaxTime; // 60 for 1min
 
-    @Column(nullable = false)
+    @Column
     private double idealMinTime;
 
     @OneToMany(mappedBy = "presentation", cascade = CascadeType.ALL, orphanRemoval = true)

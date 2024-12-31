@@ -126,9 +126,11 @@ public class PracticeService {
                         .practiceName(practice.getPracticeName())
                         .createdAt(practice.getCreatedAt())
                         .totalScore(practice.getTotalScore())
+                        .analysisId(practice.getAnalyses().isEmpty() ? null : practice.getAnalyses().get(0).getId()) // Get the first analysis ID
                         .build())
                 .collect(Collectors.toList());
     }
+
 
     /**
      * Retrieve recent practice scores for a presentation.
@@ -214,4 +216,13 @@ public class PracticeService {
         Files.write(filePath, audioFile.getBytes());
         return filePath.toString();
     }
+
+    public UUID getAnalysisIdByPracticeId(UUID practiceId) {
+        Analysis analysis = analysisRepo.findByPracticeId(practiceId);
+        if (analysis == null) {
+            throw new IllegalArgumentException("No analysis found for the given practice ID.");
+        }
+        return analysis.getId();
+    }
+
 }

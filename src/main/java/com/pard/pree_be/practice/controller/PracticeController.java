@@ -75,6 +75,7 @@ public class PracticeController {
         return ResponseEntity.ok(practices);
     }
 
+
     @GetMapping("/recent-scores")
     @Operation(summary = "최근 점수 그래프에 들어가는거 ..!!! ( List )", description = "선택한 발표에 해당되는 최근 연습 score 불러와줌")
     @ApiResponses(value = {
@@ -85,4 +86,16 @@ public class PracticeController {
         List<Integer> scores = practiceService.getRecentPracticeScores(presentationId);
         return ResponseEntity.ok(scores);
     }
+
+    @GetMapping("/{practiceId}/analysis-id")
+    @Operation(summary = "선택한 연습 analysis id 불러오기 ( 유현아 여기!!!! )", description = "선택한 연습의 analysisId 불러옴")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Analysis ID retrieved successfully."),
+            @ApiResponse(responseCode = "404", description = "No analysis found for the given practice ID.")
+    })
+    public ResponseEntity<UUID> getAnalysisIdByPracticeId(@PathVariable UUID practiceId) {
+        UUID analysisId = practiceService.getAnalysisIdByPracticeId(practiceId);
+        return ResponseEntity.ok(analysisId);
+    }
+
 }
