@@ -19,13 +19,12 @@ public class Report {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private UUID id;
 
-    private String name;
-    private double counter;
-    private int score;
-    private String feedbackMessage;
+    private String name; // Metric name (e.g., "duration", "speechSpeed")
+    private double counter; // Raw metric value
+    private int score; // Calculated score (0-100)
+    private String feedbackMessage; // Generated feedback for the user
 
     @ManyToOne
-    @JoinColumn(name = "analysis_id")
+    @JoinColumn(name = "analysis_id", nullable = false)
     private Analysis analysis;
 }
-

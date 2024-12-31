@@ -17,42 +17,43 @@ public class AnalysisService {
 
     private final AnalysisRepo analysisRepo;
     private final ReportRepo reportRepo;
+    private final ReportService reportService;
 
     public Analysis analyzePractice(Practice practice) {
-        // TODO: remove mock data
+        // Simulated/hardcoded values for now
+        double duration = 120.0; // Example duration
+        double speechSpeed = 143.0; // Example speech speed (words per minute)
+        double decibel = 68.0; // Example decibel average
+        int fillerCount = 2; // Example filler count
+        int blankCount = 1; // Example blank count
+        int eyePercentage = 85; // Example eye-tracking percentage
+
         Analysis analysis = Analysis.builder()
                 .practice(practice)
-                .duration(120.0)
-                .speechSpeed(140.0)
-                .decibel(68.0)
-                .fillerCount(2)
-                .blankCount(1)
-                .eyePercentage(85)
+                .duration(duration)
+                .speechSpeed(speechSpeed)
+                .decibel(decibel)
+                .fillerCount(fillerCount)
+                .blankCount(blankCount)
+                .eyePercentage(eyePercentage)
                 .build();
         Analysis savedAnalysis = analysisRepo.save(analysis);
 
         generateReports(savedAnalysis);
-
         return savedAnalysis;
     }
 
     public void generateReports(Analysis analysis) {
         List<Report> reports = List.of(
-                createReport("duration", analysis.getDuration()),
-                createReport("speechSpeed", analysis.getSpeechSpeed()),
-                createReport("decibel", analysis.getDecibel()),
-                createReport("fillers", analysis.getFillerCount()),
-                createReport("blanks", analysis.getBlankCount()),
-                createReport("eyeTracking", analysis.getEyePercentage()));
-        reportRepo.saveAll(reports);
-    }
+                reportService.generateDurationReport(analysis.getDuration()),
+                reportService.generateSpeechSpeedReport(analysis.getSpeechSpeed()),
+                reportService.generateDecibelReport(analysis.getDecibel()),
+                reportService.generateFillerReport(analysis.getFillerCount()),
+                reportService.generateBlankReport(analysis.getBlankCount()),
+                reportService.generateEyeTrackingReport(analysis.getEyePercentage())
+        );
 
-    private Report createReport(String metricName, double counter) {
-        return Report.builder()
-                .name(metricName)
-                .counter(counter)
-                .score(100)
-                .feedbackMessage("Feedback for " + metricName)
-                .build();
+        reports.forEach(report -> report.setAnalysis(analysis));
+        reportRepo.saveAll(reports);
     }
 }
