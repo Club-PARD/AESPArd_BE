@@ -25,7 +25,7 @@ public class MetricProcessor {
 
         return Report.builder()
                 .name(name)
-                .counter(counter)
+                .counter((int) counter)
                 .score(Math.max(score, 0)) // Ensure score doesn't drop below 0
                 .feedbackMessage(feedbackMessage)
                 .build();

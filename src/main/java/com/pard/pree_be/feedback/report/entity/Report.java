@@ -20,7 +20,7 @@ public class Report {
     private UUID id;
 
     private String name; // Metric name (e.g., "duration", "speechSpeed")
-    private double counter; // Raw metric value
+    private int counter; // Raw metric value
     private int score; // Calculated score (0-100)
     private String feedbackMessage; // Generated feedback for the user
 

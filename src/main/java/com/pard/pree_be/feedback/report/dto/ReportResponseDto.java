@@ -7,7 +7,7 @@ import lombok.Data;
 @Builder
 public class ReportResponseDto {
     private String name;
-    private double counter;
+    private int counter;
     private int score;
     private String feedbackMessage;
 }

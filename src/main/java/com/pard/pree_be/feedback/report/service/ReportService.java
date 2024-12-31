@@ -149,9 +149,10 @@ public class ReportService {
     private Report buildReport(String name, double counter, int score, String feedbackMessage) {
         return Report.builder()
                 .name(name)
-                .counter(counter)
+                .counter((int) counter)
                 .score(score)
                 .feedbackMessage(feedbackMessage)
                 .build();
     }
+
 }
