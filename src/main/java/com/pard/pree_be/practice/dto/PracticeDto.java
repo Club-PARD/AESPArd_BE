@@ -14,4 +14,6 @@ public class PracticeDto {
     private LocalDateTime createdAt;
     private int totalScore;
     private UUID analysisId;
+    private String videoKey;
+
 }

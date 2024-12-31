@@ -65,7 +65,7 @@ public class PracticeController {
 
 
     @GetMapping
-    @Operation(summary = "선택한 발표 연습 리스트 불러오기 ( List )", description = "엽습이름 , 날짜, 점수! send ")
+    @Operation(summary = "선택한 발표 연습 리스트 불러오기 ( 🍕🍔🍟🌭 유현아 여기!!!🍿🥓🥚🥞 )", description = "엽습이름 , 날짜, 점수! send ")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Practices successfully retrieved."),
             @ApiResponse(responseCode = "404", description = "No practices found.")
@@ -74,6 +74,7 @@ public class PracticeController {
         List<PracticeDto> practices = practiceService.getPracticesByPresentationId(presentationId);
         return ResponseEntity.ok(practices);
     }
+
 
 
     @GetMapping("/recent-scores")

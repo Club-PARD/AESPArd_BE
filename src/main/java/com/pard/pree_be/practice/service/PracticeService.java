@@ -125,11 +125,15 @@ public class PracticeService {
                         .id(practice.getId())
                         .practiceName(practice.getPracticeName())
                         .createdAt(practice.getCreatedAt())
-                        .totalScore(practice.getTotalScore())
-                        .analysisId(practice.getAnalyses().isEmpty() ? null : practice.getAnalyses().get(0).getId()) // Get the first analysis ID
+                        .totalScore(practice.getTotalScore()) // Ensure this field exists
+                        .videoKey(practice.getVideoKey())
+                        .analysisId(practice.getAnalyses() != null && !practice.getAnalyses().isEmpty()
+                                ? practice.getAnalyses().get(0).getId()
+                                : null) // Check for null or empty list
                         .build())
                 .collect(Collectors.toList());
     }
+
 
 
     /**
