@@ -94,8 +94,6 @@ public class PresentationService {
     }
 
 
-
-
     public List<PresentationCellDto> getPresentationsSortedByUpdatedAt(UUID userId) {
         return presentationRepo.findAllByUser_UserIdOrderByUpdatedAtDesc(userId)
                 .stream()

@@ -26,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -73,14 +74,17 @@ public class PracticeService {
                 .build();
     }
 
-
     /**
      * Add a new practice to the most recent presentation of a user.
      */
     public Presentation addPracticeToRecentPresentation(UUID userId, String videoKey, int eyePercentage, MultipartFile audioFile) throws IOException {
-        // Fetch the most recent presentation
-        Presentation recentPresentation = presentationRepo.findTopByUser_UserIdOrderByCreatedAtDesc(userId)
-                .orElseThrow(() -> new IllegalArgumentException("No recent presentation found for the user."));
+        Optional<Presentation> recentPresentationOpt = presentationRepo.findMostRecentCreatedByUser(userId);
+
+        if (recentPresentationOpt.isEmpty()) {
+            throw new IllegalArgumentException("No recent presentation found for the user.");
+        }
+
+        Presentation recentPresentation = recentPresentationOpt.get();
 
         // Create a new practice
         long practiceCount = practiceRepo.countByPresentation_PresentationId(recentPresentation.getPresentationId()) + 1;
@@ -109,6 +113,39 @@ public class PracticeService {
 
         // Save and return the updated presentation
         return presentationRepo.save(recentPresentation);
+    }
+
+    /**
+     * Add a new practice to the most recently created presentation (new API).
+     */
+    public PracticeResponseDto addPracticeToMostRecentCreatedPresentation(UUID userId, String videoKey, int eyePercentage, MultipartFile audioFile) throws IOException {
+        Presentation mostRecentCreatedPresentation = presentationRepo.findMostRecentCreatedByUser(userId)
+                .orElseThrow(() -> new IllegalArgumentException("No recent presentation created by the user."));
+
+        long practiceCount = practiceRepo.countByPresentation_PresentationId(mostRecentCreatedPresentation.getPresentationId()) + 1;
+        String practiceName = practiceCount + " 번째 연습";
+        String audioFilePath = saveAudioFile(audioFile);
+
+        Practice practice = Practice.builder()
+                .practiceName(practiceName)
+                .presentation(mostRecentCreatedPresentation)
+                .createdAt(LocalDateTime.now())
+                .videoKey(videoKey)
+                .eyePercentage(eyePercentage)
+                .audioFilePath(audioFilePath)
+                .build();
+
+        practiceRepo.save(practice);
+
+        performAnalysis(practice, eyePercentage);
+
+        return PracticeResponseDto.builder()
+                .id(practice.getId())
+                .practiceName(practice.getPracticeName())
+                .createdAt(practice.getCreatedAt())
+                .totalScore(practice.getTotalScore())
+                .videoKey(practice.getVideoKey())
+                .build();
     }
 
     /**
