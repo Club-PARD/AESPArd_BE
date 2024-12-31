@@ -24,6 +24,8 @@ public interface PresentationRepo extends JpaRepository<Presentation, UUID> {
     @EntityGraph(attributePaths = "practices")
     List<Presentation> findAllByUser_UserIdOrderByToggleFavoriteDescUpdatedAtDesc(UUID userId);
 
+    List<Presentation> findByUser_UserId(UUID userId);
+
     List<Presentation> findAllByUser_UserId(UUID userId);
 
     @EntityGraph(attributePaths = { "practices.analysis", "practices.audioFile" })

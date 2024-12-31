@@ -11,6 +11,7 @@ import com.pard.pree_be.presentation.repo.PresentationRepo;
 import com.pard.pree_be.record.service.RecordService;
 import com.pard.pree_be.user.entity.User;
 import com.pard.pree_be.user.repo.UserRepo;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -57,6 +58,25 @@ public class PresentationService {
                 .collect(Collectors.toList());
     }
 
+    public List<PresentationCellDto> getAllPresentations(UUID userId) {
+        // Fetch presentations for the user
+        List<Presentation> presentations = presentationRepo.findByUser_UserId(userId);
+
+        // Map to DTOs
+        return presentations.stream()
+                .map(presentation -> PresentationCellDto.builder()
+                        .presentationId(presentation.getPresentationId())
+                        .presentationName(presentation.getPresentationName())
+
+                        .toggleFavorite(presentation.isToggleFavorite())
+                        .totalPractices(presentation.getTotalPractices())
+                        .totalScore(presentation.getTotalScore())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+
+
     public List<PresentationCellDto> getPresentationsSortedByFavorite(UUID userId) {
         return presentationRepo.findAllByUser_UserIdOrderByToggleFavoriteDescUpdatedAtDesc(userId)
                 .stream()
@@ -64,18 +84,19 @@ public class PresentationService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     public boolean toggleFavorite(UUID presentationId) {
         Presentation presentation = presentationRepo.findById(presentationId)
-                .orElseThrow(() -> new IllegalArgumentException("Presentation not found"));
+                .orElseThrow(() -> new EntityNotFoundException("Presentation not found for ID: " + presentationId));
 
-        boolean newState = !presentation.isToggleFavorite();
-        presentation.setToggleFavorite(newState);
+        presentation.setToggleFavorite(!presentation.isToggleFavorite());
 
         presentationRepo.save(presentation);
-        presentationRepo.flush();
 
-        return newState;
+        return presentation.isToggleFavorite();
     }
+
+
 
     public List<PresentationCellDto> getPresentationsSortedByUpdatedAt(UUID userId) {
         return presentationRepo.findAllByUser_UserIdOrderByUpdatedAtDesc(userId)
@@ -137,15 +158,29 @@ public class PresentationService {
         List<Presentation> presentations;
 
         if (searchTerm == null || searchTerm.trim().isEmpty()) {
-            presentations = presentationRepo.findAllByUser_UserIdOrderByUpdatedAtDesc(userId);
+            // Fetch all presentations for the user
+            presentations = presentationRepo.findByUser_UserId(userId);
         } else {
-            presentations = presentationRepo
-                    .findByUser_UserIdAndPresentationNameContainingIgnoreCaseOrderByUpdatedAtDesc(userId, searchTerm);
+            // Fetch presentations matching the search term
+            presentations = presentationRepo.findByUser_UserId(userId).stream()
+                    .filter(presentation -> presentation.getPresentationName().toLowerCase().contains(searchTerm.toLowerCase()))
+                    .collect(Collectors.toList());
         }
+
+        // Map to DTOs
         return presentations.stream()
-                .map(this::mapToPresentationCellDto)
+                .map(presentation -> PresentationCellDto.builder()
+                        .presentationId(presentation.getPresentationId())
+                        .presentationName(presentation.getPresentationName())
+
+                        .toggleFavorite(presentation.isToggleFavorite())
+                        .totalPractices(presentation.getTotalPractices())
+                        .totalScore(presentation.getTotalScore())
+                        .build())
                 .collect(Collectors.toList());
     }
+
+
 
     @Transactional
     public void addPracticeToExistingPresentation(UUID presentationId, PracticeRequestDto practiceRequestDto) {

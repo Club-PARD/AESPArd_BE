@@ -10,7 +10,8 @@ import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
@@ -26,7 +27,7 @@ public class Analysis {
     private int blankCount;
     private int eyePercentage;
 
-    @OneToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "practice_id", nullable = false)
     private Practice practice;
 

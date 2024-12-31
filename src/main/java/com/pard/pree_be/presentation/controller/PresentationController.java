@@ -11,6 +11,7 @@ import com.pard.pree_be.presentation.service.PresentationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -75,13 +76,14 @@ public class PresentationController {
         @PatchMapping("/{presentationId}/toggle-favorite")
         @Operation(summary = "발표 즐겨찾기 토클 ( Home ) ✅", description = "선택한 발표를 즐겨찾기로 설정하거나 해제합니다.")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "즐겨찾기 상태가 성공적으로 변경되었습니다."),
-                        @ApiResponse(responseCode = "404", description = "발표를 찾을 수 없습니다.")
+                @ApiResponse(responseCode = "200", description = "즐겨찾기 상태가 성공적으로 변경되었습니다."),
+                @ApiResponse(responseCode = "404", description = "발표를 찾을 수 없습니다.")
         })
         public ResponseEntity<Boolean> toggleFavorite(@PathVariable UUID presentationId) {
                 boolean newState = presentationService.toggleFavorite(presentationId);
                 return ResponseEntity.ok(newState);
         }
+
 
         @Operation(summary = "발표 1개 삭제 : 테스트용 🤓👍", description = "입력한 발표 ID 에 해당하는 발표 삭제 ( 안에 모든파일도 같이 삭제)")
         @ApiResponses(value = {
@@ -123,18 +125,24 @@ public class PresentationController {
         @GetMapping("/search")
         @Operation(summary = "검색 기능 !! ( Search ) ✅", description = "기본 정렬은 시간순이고, 빈키워드는 다 불러옴 !")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "200", description = "성공적으로 불러옴~"),
-                        @ApiResponse(responseCode = "400", description = "잘못된 요청!"),
+                @ApiResponse(responseCode = "200", description = "성공적으로 불러옴~"),
+                @ApiResponse(responseCode = "400", description = "잘못된 요청!")
         })
         public ResponseEntity<List<PresentationCellDto>> searchPresentations(
-                        @RequestParam(required = false) String searchTerm) {
+                @RequestParam(required = false) String searchTerm) {
+                // Assume the userId is passed from the front-end (replace with actual authentication handling)
+                UUID userId = UUID.fromString("ae16a39a-1be2-48a6-85c9-b89e9dea2ea7");
 
-                UUID userId = UUID.fromString("c6710a7c-6b1f-43ef-bb07-9f586f546a47"); // Hardcoded user ID for testing
-
-                List<PresentationCellDto> presentations = presentationService.searchPresentationsByName(userId,
-                                searchTerm);
+                // If searchTerm is empty or null, fetch all presentations
+                List<PresentationCellDto> presentations;
+                if (searchTerm == null || searchTerm.trim().isEmpty()) {
+                        presentations = presentationService.getAllPresentations(userId);
+                } else {
+                        presentations = presentationService.searchPresentationsByName(userId, searchTerm);
+                }
                 return ResponseEntity.ok(presentations);
         }
+
 
 
 }

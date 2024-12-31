@@ -5,38 +5,48 @@ import com.pard.pree_be.presentation.entity.Presentation;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@NamedEntityGraph(name = "Practice.graph", attributeNodes = @NamedAttributeNode("analysis"))
 public class Practice {
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO) // Use AUTO or IDENTITY
     private UUID id;
 
+    @Column(nullable = false)
     private String practiceName;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "presentation_id", nullable = false)
     private Presentation presentation;
 
+    @Column(nullable = false)
     private LocalDateTime createdAt;
+
+    @Column
     private int totalScore;
+
+    @Column
     private String videoKey;
 
     @Lob
+    @Column
     private byte[] audioFile;
 
-    @Column(nullable = false)
+    @Column
     private String audioFilePath;
 
+    @Column
     private int eyePercentage;
 
-    @OneToOne
-    private Analysis analysis;
+    @OneToMany(mappedBy = "practice", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Analysis> analyses = new ArrayList<>();
 }
