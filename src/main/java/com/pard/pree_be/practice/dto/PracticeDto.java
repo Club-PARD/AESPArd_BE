@@ -1,5 +1,6 @@
 package com.pard.pree_be.practice.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Builder;
 import lombok.Data;
 
@@ -11,7 +12,9 @@ import java.util.UUID;
 public class PracticeDto {
     private UUID id;
     private String practiceName;
-    private LocalDateTime createdAt;
+
+    @JsonProperty("createdAt")
+    private LocalDateTime practiceCreatedAt;
     private int totalScore;
     private UUID analysisId;
     private String videoKey;

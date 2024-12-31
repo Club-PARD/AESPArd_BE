@@ -29,7 +29,8 @@ public class Practice {
     private Presentation presentation;
 
     @Column(nullable = false)
-    private LocalDateTime createdAt;
+    private LocalDateTime practiceCreatedAt;
+
 
     @Column
     private int totalScore;
@@ -38,8 +39,9 @@ public class Practice {
     private String videoKey;
 
     @Lob
-    @Column
+    @Column(name = "audio_file", columnDefinition = "LONGBLOB")
     private byte[] audioFile;
+
 
     @Column
     private String audioFilePath;

@@ -15,19 +15,17 @@ import java.util.UUID;
 @Repository
 public interface PracticeRepo extends JpaRepository<Practice, UUID> {
 
-    List<Practice> findTop5ByPresentation_User_UserIdOrderByCreatedAtDesc(UUID userId);
 
-    List<Practice> findByPresentation_User_UserId(UUID userId);
+    List<Practice> findByPresentation_PresentationIdOrderByPracticeCreatedAtDesc(UUID presentationId);
 
-    List<Practice> findByPresentation_PresentationId(UUID presentationId);
 
     @Query("SELECT p.totalScore FROM Practice p WHERE p.presentation.presentationId = :presentationId")
     List<Integer> findScoresByPresentation_PresentationId(@Param("presentationId") UUID presentationId);
     long countByPresentation_PresentationId(UUID presentationId);
 
-    List<Practice> findTop5ByPresentation_PresentationIdOrderByCreatedAtDesc(UUID presentationId);
+    List<Practice> findTop5ByPresentation_PresentationIdOrderByPracticeCreatedAtDesc(UUID presentationId);
 
-    @Query("SELECT p FROM Practice p WHERE p.presentation.user.userId = :userId ORDER BY p.createdAt DESC")
+    @Query("SELECT p FROM Practice p WHERE p.presentation.user.userId = :userId ORDER BY p.practiceCreatedAt DESC")
     Optional<Practice> findMostRecentPracticeByUserId(@Param("userId") UUID userId);
 
 

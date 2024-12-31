@@ -38,7 +38,7 @@ public class PracticeService {
     private final PresentationRepo presentationRepo;
     private final AnalysisRepo analysisRepo;
     private final ReportRepo reportRepo;
-    private final ReportService reportService; // Injected ReportService
+    private final ReportService reportService;
 
     /**
      * Add a new practice to an existing presentation.
@@ -54,7 +54,7 @@ public class PracticeService {
         Practice practice = Practice.builder()
                 .practiceName(practiceName)
                 .presentation(presentation)
-                .createdAt(LocalDateTime.now())
+                .practiceCreatedAt(LocalDateTime.now())
                 .videoKey(videoKey)
                 .eyePercentage(eyePercentage)
                 .audioFile(audioFile.getBytes())
@@ -68,128 +68,81 @@ public class PracticeService {
         return PracticeResponseDto.builder()
                 .id(practice.getId())
                 .practiceName(practice.getPracticeName())
-                .createdAt(practice.getCreatedAt())
+                .practiceCreatedAt(LocalDateTime.now())
                 .totalScore(practice.getTotalScore())
                 .videoKey(practice.getVideoKey())
                 .build();
     }
 
-    /**
-     * Add a new practice to the most recent presentation of a user.
-     */
-    public Presentation addPracticeToRecentPresentation(UUID userId, String videoKey, int eyePercentage, MultipartFile audioFile) throws IOException {
-        Optional<Presentation> recentPresentationOpt = presentationRepo.findMostRecentCreatedByUser(userId);
+    // 가장 최근 밢표에 새로운 연습 추가하기 👍
+    public PracticeResponseDto addPracticeToMostRecentlyUpdatedPresentation(
+            UUID userId, String videoKey, int eyePercentage, MultipartFile audioFile) throws IOException {
 
-        if (recentPresentationOpt.isEmpty()) {
+        // Fetch the most recently updated presentations for the user
+        List<Presentation> presentations = presentationRepo.findMostRecentlyUpdatedByUser(userId);
+
+        if (presentations.isEmpty()) {
             throw new IllegalArgumentException("No recent presentation found for the user.");
         }
 
-        Presentation recentPresentation = recentPresentationOpt.get();
+        // Select the first (most recent) presentation
+        Presentation mostRecent = presentations.get(0);
 
-        // Create a new practice
-        long practiceCount = practiceRepo.countByPresentation_PresentationId(recentPresentation.getPresentationId()) + 1;
+        // Calculate the practice count for naming
+        long practiceCount = practiceRepo.countByPresentation_PresentationId(mostRecent.getPresentationId()) + 1;
         String practiceName = practiceCount + " 번째 연습";
+
+        // Save the audio file and get its path
         String audioFilePath = saveAudioFile(audioFile);
 
+        // Build the new Practice entity
         Practice practice = Practice.builder()
                 .practiceName(practiceName)
-                .presentation(recentPresentation)
-                .createdAt(LocalDateTime.now())
+                .presentation(mostRecent)
+                .practiceCreatedAt(LocalDateTime.now())
                 .videoKey(videoKey)
                 .eyePercentage(eyePercentage)
                 .audioFilePath(audioFilePath)
                 .build();
 
+        // Save the practice entity
         practiceRepo.save(practice);
 
-        // Perform analysis
+        // Perform analysis on the practice
         performAnalysis(practice, eyePercentage);
 
-        // Add the practice to the presentation's practice list
-        recentPresentation.getPractices().add(practice);
-
-        // Increment the totalPractices field in the Presentation entity
-        recentPresentation.incrementTotalPractices();
-
-        // Save and return the updated presentation
-        return presentationRepo.save(recentPresentation);
-    }
-
-    /**
-     * Add a new practice to the most recently created presentation (new API).
-     */
-    public PracticeResponseDto addPracticeToMostRecentCreatedPresentation(UUID userId, String videoKey, int eyePercentage, MultipartFile audioFile) throws IOException {
-        Presentation mostRecentCreatedPresentation = presentationRepo.findMostRecentCreatedByUser(userId)
-                .orElseThrow(() -> new IllegalArgumentException("No recent presentation created by the user."));
-
-        long practiceCount = practiceRepo.countByPresentation_PresentationId(mostRecentCreatedPresentation.getPresentationId()) + 1;
-        String practiceName = practiceCount + " 번째 연습";
-        String audioFilePath = saveAudioFile(audioFile);
-
-        Practice practice = Practice.builder()
-                .practiceName(practiceName)
-                .presentation(mostRecentCreatedPresentation)
-                .createdAt(LocalDateTime.now())
-                .videoKey(videoKey)
-                .eyePercentage(eyePercentage)
-                .audioFilePath(audioFilePath)
-                .build();
-
-        practiceRepo.save(practice);
-
-        performAnalysis(practice, eyePercentage);
-
+        // Return the response DTO
         return PracticeResponseDto.builder()
                 .id(practice.getId())
                 .practiceName(practice.getPracticeName())
-                .createdAt(practice.getCreatedAt())
+                .practiceCreatedAt(practice.getPracticeCreatedAt())
                 .totalScore(practice.getTotalScore())
                 .videoKey(practice.getVideoKey())
                 .build();
     }
 
-    /**
-     * Retrieve practices by presentation ID.
-     */
+
     public List<PracticeDto> getPracticesByPresentationId(UUID presentationId) {
-        return practiceRepo.findByPresentation_PresentationId(presentationId).stream()
+        return practiceRepo.findByPresentation_PresentationIdOrderByPracticeCreatedAtDesc(presentationId).stream()
                 .map(practice -> PracticeDto.builder()
                         .id(practice.getId())
                         .practiceName(practice.getPracticeName())
-                        .createdAt(practice.getCreatedAt())
-                        .totalScore(practice.getTotalScore()) // Ensure this field exists
+                        .practiceCreatedAt(practice.getPracticeCreatedAt())
+                        .totalScore(practice.getTotalScore())
                         .videoKey(practice.getVideoKey())
                         .analysisId(practice.getAnalyses() != null && !practice.getAnalyses().isEmpty()
                                 ? practice.getAnalyses().get(0).getId()
-                                : null) // Check for null or empty list
+                                : null)
                         .build())
                 .collect(Collectors.toList());
     }
-
-    public PracticeDto getMostRecentPracticeByUser(UUID userId) {
-        Practice practice = practiceRepo.findMostRecentPracticeByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("No recent practice found for the user."));
-
-        return PracticeDto.builder()
-                .id(practice.getId())
-                .practiceName(practice.getPracticeName())
-                .createdAt(practice.getCreatedAt())
-                .totalScore(practice.getTotalScore())
-                .analysisId(practice.getAnalyses() != null && !practice.getAnalyses().isEmpty()
-                        ? practice.getAnalyses().get(0).getId()
-                        : null)
-                .videoKey(practice.getVideoKey())
-                .build();
-    }
-
-
 
 
     /**
      * Retrieve recent practice scores for a presentation.
      */
     public List<Integer> getRecentPracticeScores(UUID presentationId) {
-        return practiceRepo.findTop5ByPresentation_PresentationIdOrderByCreatedAtDesc(presentationId).stream()
+        return practiceRepo.findTop5ByPresentation_PresentationIdOrderByPracticeCreatedAtDesc(presentationId).stream()
                 .map(Practice::getTotalScore)
                 .collect(Collectors.toList());
     }

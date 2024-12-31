@@ -46,5 +46,9 @@ public interface PresentationRepo extends JpaRepository<Presentation, UUID> {
     List<Presentation> findAllByUser_UserId(UUID userId);
 
     List<Presentation> findByUser_UserId(UUID userId);
+
+    @Query("SELECT p FROM Presentation p WHERE p.user.userId = :userId ORDER BY p.updatedAt DESC")
+    List<Presentation> findMostRecentlyUpdatedByUser(@Param("userId") UUID userId);
+
 }
 

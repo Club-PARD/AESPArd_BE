@@ -45,24 +45,24 @@ public class PracticeController {
         return ResponseEntity.status(201).body(response);
     }
 
-    @PostMapping("/{userId}/recent-presentation/add-practice")
-    @Operation(summary = " 가장 최근 발표에 연습 새로 추가 ( AddPresentation/ AddPractice )", description = " 잔머리 굴려서 만듬ㅋㅋㅋㅋ")
+
+
+    @PostMapping("/recent-presentation/add-practice")
+    @Operation(summary = "Add a new practice to the most recently updated presentation")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Practice successfully added to the most recent presentation."),
-            @ApiResponse(responseCode = "404", description = "No recent presentation found for the user."),
-            @ApiResponse(responseCode = "400", description = "Invalid request data.")
+            @ApiResponse(responseCode = "201", description = "Practice successfully added to the most recently updated presentation."),
+            @ApiResponse(responseCode = "404", description = "No recent presentation found."),
+            @ApiResponse(responseCode = "400", description = "Invalid data.")
     })
-    public ResponseEntity<PresentationResponseDto> addPracticeToRecentPresentation(
-            @PathVariable UUID userId,
+    public ResponseEntity<PracticeResponseDto> addPracticeToMostRecentlyUpdatedPresentation(
+            @RequestParam UUID userId,
             @RequestParam String videoKey,
             @RequestParam int eyePercentage,
             @RequestPart MultipartFile audioFile) throws IOException {
 
-        Presentation updatedPresentation = practiceService.addPracticeToRecentPresentation(userId, videoKey, eyePercentage, audioFile);
-        PresentationResponseDto responseDto = PresentationResponseDto.fromEntity(updatedPresentation);
-        return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
+        PracticeResponseDto response = practiceService.addPracticeToMostRecentlyUpdatedPresentation(userId, videoKey, eyePercentage, audioFile);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
-
 
     @GetMapping
     @Operation(summary = "선택한 발표 연습 리스트 불러오기 ( 🍕🍔🍟🌭 유현아 여기!!!🍿🥓🥚🥞 )", description = "엽습이름 , 날짜, 점수! send ")
@@ -87,18 +87,5 @@ public class PracticeController {
         List<Integer> scores = practiceService.getRecentPracticeScores(presentationId);
         return ResponseEntity.ok(scores);
     }
-
-    @GetMapping("{userId}/recent/")
-    @Operation(summary = "가장 최근 practice 불러와!! ( 🚨🚨🚨김도경여기🚨🚨🚨 )", description = "Fetch details of the most recent practice.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Recent practice retrieved successfully."),
-            @ApiResponse(responseCode = "404", description = "No recent practice found.")
-    })
-    public ResponseEntity<PracticeDto> getMostRecentPractice(@PathVariable UUID userId) {
-        PracticeDto practice = practiceService.getMostRecentPracticeByUser(userId);
-        return ResponseEntity.ok(practice);
-    }
-
-
 
 }
