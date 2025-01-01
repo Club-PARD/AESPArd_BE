@@ -75,6 +75,17 @@ public class PracticeController {
         return ResponseEntity.ok(practices);
     }
 
+    @GetMapping("/recent")
+    @Operation(summary = " 선책한 발표 가장 최근 연습 불러오기 ( 🚨🚨🚨김도경 이거다 )", description = "엽습이름 , 날짜, 점수! send ")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Practices successfully retrieved."),
+            @ApiResponse(responseCode = "404", description = "No practices found.")
+    })
+    public ResponseEntity<List<PracticeDto>> getRecentPractice(@RequestParam UUID presentationId) {
+        List<PracticeDto> practices = practiceService.getRecentPractice(presentationId);
+        return ResponseEntity.ok(practices);
+    }
+
 
 
     @GetMapping("/recent-scores")

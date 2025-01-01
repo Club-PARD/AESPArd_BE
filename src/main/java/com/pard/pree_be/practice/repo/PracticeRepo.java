@@ -24,9 +24,7 @@ public interface PracticeRepo extends JpaRepository<Practice, UUID> {
     long countByPresentation_PresentationId(UUID presentationId);
 
     List<Practice> findTop5ByPresentation_PresentationIdOrderByPracticeCreatedAtDesc(UUID presentationId);
-
-    @Query("SELECT p FROM Practice p WHERE p.presentation.user.userId = :userId ORDER BY p.practiceCreatedAt DESC")
-    Optional<Practice> findMostRecentPracticeByUserId(@Param("userId") UUID userId);
+    List<Practice> findTop1ByPresentation_PresentationIdOrderByPracticeCreatedAtDesc(UUID presentationId);
 
 
 }

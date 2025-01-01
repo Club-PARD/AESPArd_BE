@@ -137,6 +137,20 @@ public class PracticeService {
                 .collect(Collectors.toList());
     }
 
+    public List<PracticeDto> getRecentPractice(UUID presentationId) {
+        return practiceRepo.findTop1ByPresentation_PresentationIdOrderByPracticeCreatedAtDesc(presentationId).stream()
+                .map(practice -> PracticeDto.builder()
+                        .id(practice.getId())
+                        .practiceName(practice.getPracticeName())
+                        .practiceCreatedAt(practice.getPracticeCreatedAt())
+                        .totalScore(practice.getTotalScore())
+                        .videoKey(practice.getVideoKey())
+                        .analysisId(practice.getAnalyses() != null && !practice.getAnalyses().isEmpty()
+                                ? practice.getAnalyses().get(0).getId()
+                                : null)
+                        .build())
+                .collect(Collectors.toList());
+    }
 
     /**
      * Retrieve recent practice scores for a presentation.
