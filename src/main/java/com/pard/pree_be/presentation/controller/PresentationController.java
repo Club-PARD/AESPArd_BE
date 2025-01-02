@@ -90,7 +90,7 @@ public class PresentationController {
                         @ApiResponse(responseCode = "204", description = "발표가 성공적으로 삭제되었습니다."),
                         @ApiResponse(responseCode = "404", description = "발표를 찾을 수 없습니다.")
         })
-        @DeleteMapping("/one-delete/{presentationId}")
+        @DeleteMapping("/{presentationId}/one-delete")
         public ResponseEntity<Void> deletePresentation(@PathVariable UUID presentationId) {
                 presentationService.deletePresentation(presentationId);
                 return ResponseEntity.noContent().build();
@@ -136,6 +136,18 @@ public class PresentationController {
                 List<PresentationCellDto> presentations = presentationService.searchPresentationsByName(userId, searchTerm);
                 return ResponseEntity.ok(presentations);
         }
+
+        @PatchMapping("/{presentationId}/update-name")
+        @Operation(summary = "발표 이름 수정 / 업데이트 하기")
+        @ApiResponses(value = {
+                @ApiResponse(responseCode = "200", description = "Presentation name updated successfully."),
+                @ApiResponse(responseCode = "404", description = "Presentation not found.")
+        })
+        public ResponseEntity<Void> updatePresentationName(@PathVariable UUID presentationId, @RequestBody String newName) {
+                presentationService.updatePresentationName(presentationId, newName);
+                return ResponseEntity.ok().build();
+        }
+
 
 
 

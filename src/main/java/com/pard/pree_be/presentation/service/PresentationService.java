@@ -224,5 +224,13 @@ public class PresentationService {
         practiceRepo.save(practice);
     }
 
+    @Transactional
+    public void updatePresentationName(UUID presentationId, String newName) {
+        Presentation presentation = presentationRepo.findById(presentationId)
+                .orElseThrow(() -> new IllegalArgumentException("Presentation not found for ID: " + presentationId));
+        presentation.setPresentationName(newName);
+        presentation.setUpdatedAt(LocalDateTime.now()); // Update timestamp
+        presentationRepo.save(presentation);
+    }
 
 }

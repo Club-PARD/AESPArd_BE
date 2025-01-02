@@ -48,7 +48,7 @@ public class PracticeController {
 
 
     @PostMapping("/recent-presentation/add-practice")
-    @Operation(summary = "Add a new practice to the most recently updated presentation")
+    @Operation(summary = "가장 최근 발표에 연습 추가하기")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Practice successfully added to the most recently updated presentation."),
             @ApiResponse(responseCode = "404", description = "No recent presentation found."),
@@ -98,5 +98,39 @@ public class PracticeController {
         List<Integer> scores = practiceService.getRecentPracticeScores(presentationId);
         return ResponseEntity.ok(scores);
     }
+
+    @DeleteMapping("/{practiceId}/one-delete")
+    @Operation(summary = " 연습 하나 삭제하는거!")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Practice deleted successfully."),
+            @ApiResponse(responseCode = "404", description = "Practice not found.")
+    })
+    public ResponseEntity<Void> deletePractice(@PathVariable UUID practiceId) {
+        practiceService.deletePractice(practiceId);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/batch-delete")
+    @Operation(summary = " 연습 여러 선택해서 삭제!!")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Practices deleted successfully."),
+            @ApiResponse(responseCode = "400", description = "Invalid request.")
+    })
+    public ResponseEntity<Void> batchDeletePractices(@RequestBody List<UUID> practiceIds) {
+        practiceService.batchDeletePractices(practiceIds);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{practiceId}/update-name")
+    @Operation(summary = "연습이름 수정")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Practice name updated successfully."),
+            @ApiResponse(responseCode = "404", description = "Practice not found.")
+    })
+    public ResponseEntity<Void> updatePracticeName(@PathVariable UUID practiceId, @RequestBody String newName) {
+        practiceService.updatePracticeName(practiceId, newName);
+        return ResponseEntity.ok().build();
+    }
+
 
 }

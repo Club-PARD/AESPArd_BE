@@ -61,9 +61,13 @@ public class PracticeService {
                 .audioFilePath(audioFilePath)
                 .build();
 
+        // Increment total practices in the presentation
+        presentation.incrementTotalPractices();
         practiceRepo.save(practice);
 
         performAnalysis(practice, eyePercentage);
+
+
 
         return PracticeResponseDto.builder()
                 .id(practice.getId())
@@ -237,5 +241,27 @@ public class PracticeService {
         Files.write(filePath, audioFile.getBytes());
         return filePath.toString();
     }
+
+    public void deletePractice(UUID practiceId) {
+        Practice practice = practiceRepo.findById(practiceId)
+                .orElseThrow(() -> new IllegalArgumentException("Practice not found"));
+        practiceRepo.delete(practice);
+    }
+
+    public void batchDeletePractices(List<UUID> practiceIds) {
+        List<Practice> practices = practiceRepo.findAllById(practiceIds);
+        if (practices.isEmpty()) {
+            throw new IllegalArgumentException("No practices found for the given IDs");
+        }
+        practiceRepo.deleteAll(practices);
+    }
+
+    public void updatePracticeName(UUID practiceId, String newName) {
+        Practice practice = practiceRepo.findById(practiceId)
+                .orElseThrow(() -> new IllegalArgumentException("Practice not found"));
+        practice.setPracticeName(newName);
+        practiceRepo.save(practice);
+    }
+
 
 }
