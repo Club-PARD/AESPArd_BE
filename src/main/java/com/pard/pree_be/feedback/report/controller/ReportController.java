@@ -27,6 +27,7 @@ public class ReportController {
                         .name(report.getName())
                         .counter(report.getCounter())
                         .score(report.getScore())
+                        .totalScore(report.getTotalScore())
                         .feedbackMessage(report.getFeedbackMessage())
                         .build())
                 .collect(Collectors.toList());

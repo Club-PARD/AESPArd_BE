@@ -27,4 +27,7 @@ public class Report {
     @ManyToOne
     @JoinColumn(name = "analysis_id", nullable = false)
     private Analysis analysis;
+
+    @Column(nullable = false)
+    private int totalScore;
 }

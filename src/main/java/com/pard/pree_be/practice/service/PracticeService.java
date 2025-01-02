@@ -160,7 +160,7 @@ public class PracticeService {
      * Retrieve recent practice scores for a presentation.
      */
     public List<Integer> getRecentPracticeScores(UUID presentationId) {
-        return practiceRepo.findTop5ByPresentation_PresentationIdOrderByPracticeCreatedAtDesc(presentationId).stream()
+        return practiceRepo.findTop5ByPresentation_PresentationIdOrderByPracticeCreatedAtAsc(presentationId).stream()
                 .map(Practice::getTotalScore)
                 .collect(Collectors.toList());
     }
@@ -214,6 +214,16 @@ public class PracticeService {
             report.setAnalysis(analysis);
             reportRepo.save(report);
         });
+        // Calculate the total score
+        int totalScore = reports.stream()
+                .mapToInt(Report::getTotalScore) // Assuming each Report has a totalScore field
+                .sum();
+
+        // Update the Practice with the total score
+        Practice practice = analysis.getPractice();
+        practice.setTotalScore(totalScore);
+        practiceRepo.save(practice);
+
     }
 
     /**

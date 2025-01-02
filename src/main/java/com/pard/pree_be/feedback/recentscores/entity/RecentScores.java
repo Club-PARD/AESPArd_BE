@@ -1,4 +1,4 @@
-package com.pard.pree_be.feedback.analysis.entity;
+package com.pard.pree_be.feedback.recentscores.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

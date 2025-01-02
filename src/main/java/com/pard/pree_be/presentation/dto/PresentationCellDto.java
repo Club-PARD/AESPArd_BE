@@ -1,5 +1,6 @@
 package com.pard.pree_be.presentation.dto;
 
+import com.pard.pree_be.presentation.entity.Presentation;
 import lombok.Builder;
 import lombok.Getter;
 
@@ -22,4 +23,13 @@ public class PresentationCellDto {
     private LocalDateTime updatedAt;
     private double idealMinTime;
     private double idealMaxTime;
+
+    public static PresentationResponseDto fromEntity(Presentation presentation) {
+        PresentationResponseDto dto = new PresentationResponseDto();
+        dto.setPresentationId(presentation.getPresentationId());
+        dto.setPresentationName(presentation.getPresentationName());
+        dto.setCreatedAt(presentation.getCreatedAt());
+        dto.setTotalScore(presentation.getTotalScore());
+        return dto;
+    }
 }

@@ -5,6 +5,8 @@ import com.pard.pree_be.feedback.scoring.MetricStandard;
 import com.pard.pree_be.feedback.scoring.ScoringStandards;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 @Service
 public class ReportService {
 
@@ -143,16 +145,30 @@ public class ReportService {
         return buildReport("eyeTracking", eyePercentage, Math.max(score, 0), feedbackMessage);
     }
 
+    private static final Map<String, Double> WEIGHTAGE_MAP = Map.of(
+            "eyeTracking", 0.20,
+            "blanks", 0.10,
+            "decibel", 0.20,
+            "fillers", 0.10,
+            "speechSpeed", 0.20,
+            "duration", 0.20
+    );
+
     /**
      * Helper method to build a report.
      */
     private Report buildReport(String name, double counter, int score, String feedbackMessage) {
+        double weightage = WEIGHTAGE_MAP.getOrDefault(name, 0.0); // Retrieve the weightage for the metric
+        int weightedScore = (int) (score * weightage); // Calculate the weighted score
+
         return Report.builder()
                 .name(name)
                 .counter((int) counter)
                 .score(score)
+                .totalScore(weightedScore)
                 .feedbackMessage(feedbackMessage)
                 .build();
     }
+
 
 }

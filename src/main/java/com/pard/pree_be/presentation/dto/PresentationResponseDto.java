@@ -14,12 +14,14 @@ public class PresentationResponseDto {
     private UUID presentationId;
     private String presentationName;
     private LocalDateTime createdAt;
+    private int totalScore;
 
     public static PresentationResponseDto fromEntity(Presentation presentation) {
         PresentationResponseDto dto = new PresentationResponseDto();
         dto.setPresentationId(presentation.getPresentationId());
         dto.setPresentationName(presentation.getPresentationName());
         dto.setCreatedAt(presentation.getCreatedAt());
+        dto.setTotalScore(presentation.getTotalScore());
         return dto;
     }
 }

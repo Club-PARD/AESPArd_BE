@@ -34,6 +34,8 @@ public class Presentation {
     private LocalDateTime updatedAt;
 
     private int totalPractices;
+
+    @Column
     private int totalScore;
 
     private boolean toggleFavorite;

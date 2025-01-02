@@ -9,5 +9,6 @@ public class ReportResponseDto {
     private String name;
     private int counter;
     private int score;
+    private int totalScore;
     private String feedbackMessage;
 }

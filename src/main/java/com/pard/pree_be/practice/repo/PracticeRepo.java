@@ -23,7 +23,7 @@ public interface PracticeRepo extends JpaRepository<Practice, UUID> {
     List<Integer> findScoresByPresentation_PresentationId(@Param("presentationId") UUID presentationId);
     long countByPresentation_PresentationId(UUID presentationId);
 
-    List<Practice> findTop5ByPresentation_PresentationIdOrderByPracticeCreatedAtDesc(UUID presentationId);
+    List<Practice> findTop5ByPresentation_PresentationIdOrderByPracticeCreatedAtAsc(UUID presentationId);
     List<Practice> findTop1ByPresentation_PresentationIdOrderByPracticeCreatedAtDesc(UUID presentationId);
 
 

@@ -33,4 +33,8 @@ public class Analysis {
 
     @OneToMany(mappedBy = "analysis", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Report> reports = new ArrayList<>();
+
+
+    @Column(nullable = false)
+    private int totalScore;
 }
