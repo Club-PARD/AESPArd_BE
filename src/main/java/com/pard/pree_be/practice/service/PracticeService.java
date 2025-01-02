@@ -171,7 +171,7 @@ public class PracticeService {
      */
     private void performAnalysis(Practice practice, int eyePercentage) {
         try {
-            double decibel = AudioAnalyzer.calculateAverageDecibel(practice.getAudioFilePath());
+            double decibel = AudioAnalyzer.calculateAverageDecibel(practice.getAudioFilePath()) + 100;
             double duration = getAudioDuration(practice.getAudioFilePath());
 
             int fillerCount = 3;
