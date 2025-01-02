@@ -128,9 +128,12 @@ public class PracticeController {
             @ApiResponse(responseCode = "404", description = "Practice not found.")
     })
     public ResponseEntity<Void> updatePracticeName(@PathVariable UUID practiceId, @RequestBody String newName) {
-        practiceService.updatePracticeName(practiceId, newName);
+        // Sanitize the name: remove quotes and trim whitespace
+        String sanitizedNewName = newName.replaceAll("^\"|\"$", "").trim();
+        practiceService.updatePracticeName(practiceId, sanitizedNewName);
         return ResponseEntity.ok().build();
     }
+
 
 
 }

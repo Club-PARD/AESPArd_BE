@@ -228,9 +228,15 @@ public class PresentationService {
     public void updatePresentationName(UUID presentationId, String newName) {
         Presentation presentation = presentationRepo.findById(presentationId)
                 .orElseThrow(() -> new IllegalArgumentException("Presentation not found for ID: " + presentationId));
-        presentation.setPresentationName(newName);
+
+        if (newName == null || newName.isBlank()) {
+            throw new IllegalArgumentException("Presentation name cannot be null or empty");
+        }
+
+        presentation.setPresentationName(newName); // Set sanitized name
         presentation.setUpdatedAt(LocalDateTime.now()); // Update timestamp
         presentationRepo.save(presentation);
     }
+
 
 }

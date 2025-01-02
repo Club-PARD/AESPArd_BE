@@ -144,7 +144,9 @@ public class PresentationController {
                 @ApiResponse(responseCode = "404", description = "Presentation not found.")
         })
         public ResponseEntity<Void> updatePresentationName(@PathVariable UUID presentationId, @RequestBody String newName) {
-                presentationService.updatePresentationName(presentationId, newName);
+                // Sanitize the name: remove quotes and trim whitespace
+                String sanitizedNewName = newName.replaceAll("^\"|\"$", "").trim();
+                presentationService.updatePresentationName(presentationId, sanitizedNewName);
                 return ResponseEntity.ok().build();
         }
 

@@ -35,7 +35,7 @@ public class Presentation {
 
     private int totalPractices;
 
-    @Column
+    @Column(nullable = false)
     private int totalScore;
 
     private boolean toggleFavorite;

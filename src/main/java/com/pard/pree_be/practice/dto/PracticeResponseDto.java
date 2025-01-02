@@ -16,4 +16,5 @@ public class PracticeResponseDto {
     private LocalDateTime practiceCreatedAt;
     private int totalScore;
     private String videoKey;
+    private int presentationTotalScore;
 }

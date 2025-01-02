@@ -74,6 +74,7 @@ public class PracticeService {
                 .practiceName(practice.getPracticeName())
                 .practiceCreatedAt(LocalDateTime.now())
                 .totalScore(practice.getTotalScore())
+                .presentationTotalScore(presentation.getTotalScore())
                 .videoKey(practice.getVideoKey())
                 .build();
     }
@@ -191,6 +192,12 @@ public class PracticeService {
             analysisRepo.save(analysis);
 
             generateReportsForAnalysis(analysis);
+
+            // Update the presentation's total score with the practice's total score
+            Presentation presentation = practice.getPresentation();
+            presentation.setTotalScore(practice.getTotalScore());
+            presentationRepo.save(presentation);
+
         } catch (Exception e) {
             throw new RuntimeException("Failed to analyze practice: " + e.getMessage(), e);
         }
@@ -269,9 +276,15 @@ public class PracticeService {
     public void updatePracticeName(UUID practiceId, String newName) {
         Practice practice = practiceRepo.findById(practiceId)
                 .orElseThrow(() -> new IllegalArgumentException("Practice not found"));
+
+        if (newName == null || newName.isBlank()) {
+            throw new IllegalArgumentException("Practice name cannot be null or empty");
+        }
+
         practice.setPracticeName(newName);
         practiceRepo.save(practice);
     }
+
 
 
 }
