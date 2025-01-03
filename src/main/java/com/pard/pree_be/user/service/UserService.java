@@ -44,11 +44,7 @@ public class UserService {
                 .orElseThrow(() -> new IllegalArgumentException("User not found for ID: " + userId));
     }
 
-    public List<UUID> getAllUserIds() {
-        return userRepo.findAll().stream()
-                .map(User::getUserId)
-                .collect(Collectors.toList());
-    }
+
 
 
 }

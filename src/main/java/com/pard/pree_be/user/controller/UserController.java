@@ -39,12 +39,7 @@ public class UserController {
         return ResponseEntity.ok(userDetails);
     }
 
-    @Operation(summary = "모든 사용자 ID 조회 ✅", description = "모든 사용자의 UUID를 리스트 형태로 반환")
-    @GetMapping("/ids")
-    public ResponseEntity<List<UUID>> getAllUserIds() {
-        List<UUID> userIds = userService.getAllUserIds();
-        return ResponseEntity.ok(userIds);
-    }
+
 
 
 }
