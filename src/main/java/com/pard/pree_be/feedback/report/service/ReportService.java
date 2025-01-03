@@ -36,7 +36,7 @@ public class ReportService {
         // Generate individual reports for each metric
         List<Report> reports = List.of(
                 generateDurationReport(analysis.getDuration(), idealMin, idealMax),
-                generateSpeechSpeedReport(analysis.getSpeechSpeed()),
+                generateSpeechSpeedReport(analysis.getSpeechSpeed(), analysis.getDuration()), // Pass duration as the second argument
                 generateDecibelReport(analysis.getDecibel()),
                 generateFillerReport(analysis.getFillerCount()),
                 generateBlankReport(analysis.getBlankCount()),
@@ -60,6 +60,7 @@ public class ReportService {
     }
 
 
+
     public Report generateDurationReport(double duration, int idealMin, int idealMax) {
         int score = 100;
         String feedbackMessage;
@@ -76,6 +77,11 @@ public class ReportService {
             feedbackMessage = "완벽한 시간 관리입니다! 잘하셨습니다.";
         }
 
+        // Override feedback if score is 90 or higher
+        if (score >= 90) {
+            feedbackMessage = "완벽한 시간 관리입니다! 잘하셨습니다.";
+        }
+
         score = Math.max(score, 0); // Prevent negative scores
 
         return buildReport("duration", (int) duration, score, feedbackMessage);
@@ -85,33 +91,49 @@ public class ReportService {
 
 
 
+
     /**
      * Generate a report for the speech speed metric.
      */
-    public Report generateSpeechSpeedReport(double speechSpeedSPM) {
-        // Define the ideal range for Korean speech speed in SPM
-        int idealMin = 180;
-        int idealMax = 250;
+    public Report generateSpeechSpeedReport(double speechSpeedSPM, double durationInSeconds) {
+        Map<String, Integer> range = calculateIdealRange(durationInSeconds);
+        int idealMin = range.get("idealMin");
+        int idealMax = range.get("idealMax");
         int score = 100;
         String feedbackMessage;
 
         if (speechSpeedSPM < idealMin) {
-            int diff = (int) (idealMin - speechSpeedSPM); // Difference in SPM
-            feedbackMessage = diff + "꽤 느린 편이에요. 조금만 빠르게 말해볼까요?";
-            score -= (diff / 10) * 5; // Deduct 5 points per 10 SPM below idealMin
+            int diff = (int) (idealMin - speechSpeedSPM);
+            feedbackMessage = diff + " SPM 느린 편이에요. 조금만 빠르게 말해볼까요?";
+            score -= (diff / 10) * 5;
         } else if (speechSpeedSPM > idealMax) {
-            int diff = (int) (speechSpeedSPM - idealMax); // Difference in SPM
-            feedbackMessage = diff + "꽤 빠른 편이에요. 조금만 천천히 말해볼까요?";
-            score -= (diff / 10) * 5; // Deduct 5 points per 10 SPM above idealMax
+            int diff = (int) (speechSpeedSPM - idealMax);
+            feedbackMessage = diff + " SPM 빠른 편이에요. 조금만 천천히 말해볼까요?";
+            score -= (diff / 10) * 5;
         } else {
             feedbackMessage = "완벽한 속도에요! 이 속도를 유지하세요.";
         }
 
-        // Ensure score is not negative
-        score = Math.max(score, 0);
+        // Override feedback if score is 90 or higher
+        if (score >= 90) {
+            feedbackMessage = "완벽한 속도에요! 이 속도를 유지하세요.";
+        }
 
-        return buildReport("speechSpeed", (int) speechSpeedSPM, score, feedbackMessage);
+        return buildReport("speechSpeed", (int) speechSpeedSPM, Math.max(score, 0), feedbackMessage);
     }
+
+
+    public Map<String, Integer> calculateIdealRange(double durationInSeconds) {
+        if (durationInSeconds < 30) {
+            return Map.of("idealMin", 100, "idealMax", 140); // Short duration range
+        } else if (durationInSeconds <= 120) {
+            return Map.of("idealMin", 130, "idealMax", 180); // Medium duration range
+        } else {
+            return Map.of("idealMin", 180, "idealMax", 250); // Long duration range
+        }
+    }
+
+
 
 
     /**
@@ -132,8 +154,14 @@ public class ReportService {
             feedbackMessage = "발표에 딱 맞는 목소리 크기였습니다!";
         }
 
+        // Override feedback if score is 90 or higher
+        if (score >= 90) {
+            feedbackMessage = "발표에 딱 맞는 목소리 크기였습니다!";
+        }
+
         return buildReport("decibel", decibel, Math.max(score, 0), feedbackMessage);
     }
+
 
     /**
      * Generate a report for the filler count metric.
@@ -151,8 +179,14 @@ public class ReportService {
             feedbackMessage = "의식적으로 발화 지연 표현을 고치려고 노력해보세요!";
         }
 
+        // Override feedback if score is 90 or higher
+        if (score >= 90) {
+            feedbackMessage = "한 번도 없었어요!";
+        }
+
         return buildReport("fillers", fillerCount, Math.max(score, 0), feedbackMessage);
     }
+
 
     /**
      * Generate a report for the blank count metric.
@@ -166,14 +200,20 @@ public class ReportService {
             feedbackMessage = "한 번도 없었어요!";
         } else if (blankCount <= 3) {
             feedbackMessage = "조금만 줄이면 발표 흐름이 더 매끄러워질 거예요.";
-            score -= blankCount * 2; // Example: Deduct 2 points per blank within the range 3-5 seconds
+            score -= blankCount * 2;
         } else {
             feedbackMessage = "너무 많아요. 발표 내용을 더 숙지해보세요.";
-            score -= blankCount * 5; // Example: Deduct 5 points per blank above 5 seconds
+            score -= blankCount * 5;
+        }
+
+        // Override feedback if score is 90 or higher
+        if (score >= 90) {
+            feedbackMessage = "한 번도 없었어요!";
         }
 
         return buildReport("blanks", blankCount, Math.max(score, 0), feedbackMessage);
     }
+
 
     /**
      * Generate a report for the eye tracking percentage metric.
@@ -184,8 +224,14 @@ public class ReportService {
                 ? "훌륭합니다! 실전에서도 관객과의 소통이 중요해요."
                 : "관객과의 시선을 조금 더 유지해보세요!";
 
+        // Override feedback if score is 90 or higher
+        if (score >= 90) {
+            feedbackMessage = "훌륭합니다! 실전에서도 관객과의 소통이 중요해요.";
+        }
+
         return buildReport("eyeTracking", eyePercentage, score, feedbackMessage);
     }
+
 
 
     private static final Map<String, Double> WEIGHTAGE_MAP = Map.of(

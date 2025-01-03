@@ -2,6 +2,7 @@ package com.pard.pree_be.presentation.controller;
 
 import com.pard.pree_be.practice.dto.PracticeRequestDto;
 import com.pard.pree_be.practice.entity.Practice;
+import com.pard.pree_be.practice.repo.PracticeRepo;
 import com.pard.pree_be.presentation.dto.PresentationCellDto;
 import com.pard.pree_be.presentation.dto.PresentationRequestDto;
 import com.pard.pree_be.presentation.dto.PresentationCellDto;
@@ -27,16 +28,18 @@ import java.util.UUID;
 public class PresentationController {
 
         private final PresentationService presentationService;
+        private final PracticeRepo practiceRepo;
 
         @PostMapping("/create-presentation")
         @Operation(summary = "새로운 발표 생성 ( AddPresentation )  ✅", description = "새로운 발표를 생성합니다.")
         @ApiResponses(value = {
-                        @ApiResponse(responseCode = "201", description = "발표가 성공적으로 생성되었습니다."),
-                        @ApiResponse(responseCode = "400", description = "유효하지 않은 요청 데이터입니다.")
+                @ApiResponse(responseCode = "201", description = "발표가 성공적으로 생성되었습니다."),
+                @ApiResponse(responseCode = "400", description = "유효하지 않은 요청 데이터입니다.")
         })
         public ResponseEntity<PresentationResponseDto> createPresentation(@RequestBody @Valid PresentationRequestDto requestDto) {
                 Presentation presentation = presentationService.createPresentation(requestDto);
-                PresentationResponseDto responseDto = PresentationResponseDto.fromEntity(presentation);
+                // Pass PracticeRepo to fromEntity method
+                PresentationResponseDto responseDto = PresentationResponseDto.fromEntity(presentation, practiceRepo);
                 return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
         }
 

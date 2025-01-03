@@ -19,6 +19,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -238,5 +239,17 @@ public class PresentationService {
         presentationRepo.save(presentation);
     }
 
+    @Transactional
+    public void updateTotalScore(UUID presentationId) {
+        Presentation presentation = presentationRepo.findById(presentationId)
+                .orElseThrow(() -> new IllegalArgumentException("Presentation not found"));
+
+        Optional<Practice> mostRecentPractice = practiceRepo.findMostRecentPracticeByPresentationId(presentationId);
+
+        int totalScore = mostRecentPractice.map(Practice::getTotalScore).orElse(0);
+        presentation.setTotalScore(totalScore);
+
+        presentationRepo.save(presentation);
+    }
 
 }

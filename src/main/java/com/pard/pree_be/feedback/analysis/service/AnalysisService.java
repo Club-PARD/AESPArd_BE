@@ -82,7 +82,7 @@ public class AnalysisService {
         // Generate individual reports for each metric
         List<Report> reports = List.of(
                 reportService.generateDurationReport(analysis.getDuration(), idealMin, idealMax),
-                reportService.generateSpeechSpeedReport(analysis.getSpeechSpeed()),
+                reportService.generateSpeechSpeedReport(analysis.getSpeechSpeed(), analysis.getDuration()), // Pass both arguments
                 reportService.generateDecibelReport(analysis.getDecibel()),
                 reportService.generateFillerReport(analysis.getFillerCount()),
                 reportService.generateBlankReport(analysis.getBlankCount()),

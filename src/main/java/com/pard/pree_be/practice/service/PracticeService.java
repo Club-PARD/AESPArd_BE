@@ -277,16 +277,16 @@ public class PracticeService {
         }
     }
 
-
     public void processTranscriptionAndScore(String transcriptionJson, double duration) {
         // Use TranscriptionProcessor to calculate SPM
         String transcriptionText = transcriptionProcessor.extractTextFromJson(transcriptionJson); // Parse JSON for text
         double speechSPM = transcriptionProcessor.calculateSpeechSPM(transcriptionText, duration);
 
-        // Generate report for speech speed
-        Report speechSpeedReport = reportService.generateSpeechSpeedReport(speechSPM);
+        // Pass both speechSPM and duration to generateSpeechSpeedReport
+        Report speechSpeedReport = reportService.generateSpeechSpeedReport(speechSPM, duration);
         reportRepo.save(speechSpeedReport);
     }
+
 
 
 
@@ -299,7 +299,7 @@ public class PracticeService {
     private void generateReportsForAnalysis(Analysis analysis, int idealMin, int idealMax) {
         List<Report> reports = List.of(
                 reportService.generateDurationReport(analysis.getDuration(), idealMin, idealMax),
-                reportService.generateSpeechSpeedReport(analysis.getSpeechSpeed()),
+                reportService.generateSpeechSpeedReport(analysis.getSpeechSpeed(), analysis.getDuration()), // Pass both arguments
                 reportService.generateDecibelReport(analysis.getDecibel()),
                 reportService.generateFillerReport(analysis.getFillerCount()),
                 reportService.generateBlankReport(analysis.getBlankCount()),

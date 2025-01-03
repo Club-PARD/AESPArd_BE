@@ -1,5 +1,6 @@
 package com.pard.pree_be.presentation.repo;
 
+import com.pard.pree_be.practice.entity.Practice;
 import com.pard.pree_be.presentation.entity.Presentation;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
