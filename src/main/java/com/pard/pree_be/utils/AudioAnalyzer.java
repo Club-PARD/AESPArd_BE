@@ -3,7 +3,9 @@ package com.pard.pree_be.utils;
 import be.tarsos.dsp.AudioDispatcher;
 import be.tarsos.dsp.AudioEvent;
 import be.tarsos.dsp.AudioProcessor;
-import be.tarsos.dsp.io.jvm.AudioDispatcherFactory;
+import be.tarsos.dsp.io.TarsosDSPAudioFormat;
+import be.tarsos.dsp.io.TarsosDSPAudioInputStream;
+import be.tarsos.dsp.io.jvm.JVMAudioInputStream;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
@@ -14,17 +16,29 @@ import java.io.InputStream;
 public class AudioAnalyzer {
 
     public static double calculateAverageDecibel(InputStream inputStream) throws Exception {
-        // Wrap the InputStream
+        // Wrap the InputStream for buffering
         InputStream bufferedStream = new BufferedInputStream(inputStream);
 
-        // Convert to AudioInputStream
+        // Convert to AudioInputStream and reformat it if necessary
         AudioInputStream originalStream = AudioSystem.getAudioInputStream(bufferedStream);
         AudioInputStream convertedStream = convertToSupportedFormat(originalStream);
 
-        // Use AudioDispatcherFactory to create a dispatcher
+        // Convert javax.sound.sampled.AudioInputStream to TarsosDSPAudioInputStream
+        TarsosDSPAudioInputStream tarsosStream = new JVMAudioInputStream(convertedStream);
+        TarsosDSPAudioFormat tarsosFormat = new TarsosDSPAudioFormat(
+                TarsosDSPAudioFormat.Encoding.PCM_SIGNED,
+                44100,
+                16,
+                1,
+                2,
+                44100,
+                true
+        );
+
+        // Create an AudioDispatcher
         int bufferSize = 1024; // Buffer size for audio processing
         int overlap = 512; // Overlap size for buffer chunks
-        AudioDispatcher dispatcher = AudioDispatcherFactory.fromDefaultMicrophone(bufferSize, overlap);
+        AudioDispatcher dispatcher = new AudioDispatcher(tarsosStream, bufferSize, overlap);
 
         // Accumulators for total decibel and frame count
         double[] totalDecibel = {0.0};
@@ -60,13 +74,14 @@ public class AudioAnalyzer {
         AudioFormat originalFormat = originalStream.getFormat();
         AudioFormat targetFormat = new AudioFormat(
                 AudioFormat.Encoding.PCM_SIGNED,
-                originalFormat.getSampleRate(),
-                16,
-                originalFormat.getChannels(),
-                originalFormat.getChannels() * 2,
-                originalFormat.getSampleRate(),
-                false
+                44100,        // Sample rate
+                16,           // Sample size in bits
+                1,            // Channels (mono)
+                2,            // Frame size (bytes per frame)
+                44100,        // Frame rate
+                true          // Big-endian
         );
+
         return AudioSystem.getAudioInputStream(targetFormat, originalStream);
     }
 }
