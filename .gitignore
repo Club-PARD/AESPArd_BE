@@ -40,6 +40,4 @@ out/
 
 src/main/resources/application.properties
 
-config/
-
 uploads/
