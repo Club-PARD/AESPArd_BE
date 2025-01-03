@@ -15,6 +15,8 @@ public class PresentationResponseDto {
     private String presentationName;
     private LocalDateTime createdAt;
     private int totalScore;
+    private double idealMinTime;
+    private double idealMaxTime;
 
     public static PresentationResponseDto fromEntity(Presentation presentation) {
         PresentationResponseDto dto = new PresentationResponseDto();

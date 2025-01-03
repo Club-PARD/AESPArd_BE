@@ -19,7 +19,7 @@ public class ReportController {
     private final ReportRepo reportRepo;
 
     @GetMapping("/{analysisId}")
-    public ResponseEntity<List<ReportResponseDto>> getReportsByAnalysisId(@PathVariable UUID analysisId) {
+    public ResponseEntity<List<ReportResponseDto>> getReportsByAnalysisId(@PathVariable Long analysisId) {
         List<Report> reports = reportRepo.findByAnalysisId(analysisId);
 
         List<ReportResponseDto> response = reports.stream()

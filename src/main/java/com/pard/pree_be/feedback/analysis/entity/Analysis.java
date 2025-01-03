@@ -18,7 +18,7 @@ import java.util.UUID;
 public class Analysis {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID id;
+    private Long id;
 
     private double duration;
     private double speechSpeed;

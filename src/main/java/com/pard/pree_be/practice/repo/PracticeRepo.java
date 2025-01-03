@@ -13,7 +13,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface PracticeRepo extends JpaRepository<Practice, UUID> {
+public interface PracticeRepo extends JpaRepository<Practice, Long> {
 
 
     List<Practice> findByPresentation_PresentationIdOrderByPracticeCreatedAtDesc(UUID presentationId);
@@ -25,6 +25,10 @@ public interface PracticeRepo extends JpaRepository<Practice, UUID> {
 
     List<Practice> findTop5ByPresentation_PresentationIdOrderByPracticeCreatedAtAsc(UUID presentationId);
     List<Practice> findTop1ByPresentation_PresentationIdOrderByPracticeCreatedAtDesc(UUID presentationId);
+
+
+    @Query("SELECT p FROM Practice p WHERE p.presentation.presentationId = :presentationId ORDER BY p.practiceCreatedAt DESC")
+    Optional<Practice> findTopByPresentationIdOrderByPracticeCreatedAtDesc(@Param("presentationId") UUID presentationId);
 
 
 }

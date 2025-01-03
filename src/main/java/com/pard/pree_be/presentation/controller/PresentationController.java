@@ -85,7 +85,7 @@ public class PresentationController {
         }
 
 
-        @Operation(summary = "발표 1개 삭제 : 테스트용 🤓👍", description = "입력한 발표 ID 에 해당하는 발표 삭제 ( 안에 모든파일도 같이 삭제)")
+        @Operation(summary = "발표 1개 삭제", description = "입력한 발표 ID 에 해당하는 발표 삭제 ( 안에 모든파일도 같이 삭제)")
         @ApiResponses(value = {
                         @ApiResponse(responseCode = "204", description = "발표가 성공적으로 삭제되었습니다."),
                         @ApiResponse(responseCode = "404", description = "발표를 찾을 수 없습니다.")

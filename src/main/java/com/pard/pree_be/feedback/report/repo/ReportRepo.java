@@ -9,5 +9,5 @@ import java.util.UUID;
 
 @Repository
 public interface ReportRepo extends JpaRepository<Report, UUID> {
-    List<Report> findByAnalysisId(UUID analysisId);
+    List<Report> findByAnalysisId(Long analysisId);
 }

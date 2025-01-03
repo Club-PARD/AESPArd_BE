@@ -10,13 +10,13 @@ import java.util.UUID;
 @Data
 @Builder
 public class PracticeDto {
-    private UUID id;
+    private Long id;
     private String practiceName;
 
     @JsonProperty("createdAt")
     private LocalDateTime practiceCreatedAt;
     private int totalScore;
-    private UUID analysisId;
+    private Long analysisId;
     private String videoKey;
 
 }

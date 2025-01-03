@@ -13,7 +13,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Random;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/records")
@@ -24,9 +26,11 @@ public class RecordController {
 
     @GetMapping("/recent-average")
     @Operation(summary = "최근 연습 5개 평균 점수 6개 ( Home ) ✅", description = "유저 하드코딩으로 설정해둬쓰")
-    public ResponseEntity<List<Integer>> getRecentPracticeScores(@RequestParam UUID presentationId) {
-        List<Integer> scores = recordService.getScoresByPresentation(presentationId);
-        return ResponseEntity.ok(scores); // Always return 200 with the list (empty if no scores found)
+    public List<Integer> getNumbers() {
+        return new Random().ints(6, 50, 101)
+                .boxed()
+                .collect(Collectors.toList());
     }
+
 
 }
