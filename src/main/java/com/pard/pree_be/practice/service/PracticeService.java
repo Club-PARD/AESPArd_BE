@@ -141,20 +141,21 @@ public class PracticeService {
                 .build();
     }
 
-    public Analysis processAudio(MultipartFile audioFile, Long practiceId) throws Exception {
+    public Analysis processAudio(MultipartFile audioFile, Long practiceId, int eyePercentage) throws Exception {
+        // Find the practice by ID
         Practice practice = practiceRepo.findById(practiceId)
                 .orElseThrow(() -> new IllegalArgumentException("Practice not found"));
 
-        // Upload to S3
+        // Upload the audio file to S3
         String audioFilePath = s3Service.upload(audioFile, "audio-files", practiceId);
 
-        // Analyze decibel using Tarsos
-        double decibel = AudioAnalyzer.calculateAverageDecibel(audioFile.getInputStream());
+        // Analyze decibel using Tarsos DSP
+        double decibel = AudioAnalyzer.calculateAverageDecibel(audioFile.getInputStream()) + 100; // Adjusted by adding 100
 
         // Calculate duration
         double duration = calculateDuration(audioFile.getInputStream());
 
-        // Transcribe audio
+        // Transcribe the audio
         String transcriptionJson = transcriptionService.transcribeAudio(bucketName, audioFilePath);
 
         // Calculate metrics
@@ -162,19 +163,27 @@ public class PracticeService {
         int fillerCount = transcriptionProcessor.countFillers(transcriptionJson);
         int blankCount = transcriptionProcessor.countBlanks(transcriptionJson, 3.0);
 
-        // Perform analysis and save results
-        return analyzeAndSaveMetrics(practice, decibel, duration, speechSpeed, fillerCount, blankCount);
+        // Perform analysis and save results, including eyePercentage
+        return analyzeAndSaveMetrics(practice, decibel, duration, speechSpeed, fillerCount, blankCount, eyePercentage);
     }
 
+
     private Analysis analyzeAndSaveMetrics(Practice practice, double decibel, double duration,
-                                           double speechSpeed, int fillerCount, int blankCount) {
+                                           double speechSpeed, int fillerCount, int blankCount, int eyePercentage) {
+        // Round and adjust values
+        int roundedDecibel = (int) Math.round(decibel);
+        int roundedDuration = (int) Math.round(duration);
+        int roundedSpeechSpeed = (int) Math.round(speechSpeed);
+
+        // Build and save the analysis entity
         Analysis analysis = Analysis.builder()
                 .practice(practice)
-                .decibel(decibel)
-                .duration(duration)
-                .speechSpeed(speechSpeed)
+                .decibel(roundedDecibel)
+                .duration(roundedDuration)
+                .speechSpeed(roundedSpeechSpeed)
                 .fillerCount(fillerCount)
                 .blankCount(blankCount)
+                .eyePercentage(eyePercentage)
                 .build();
 
         analysisRepo.save(analysis);
@@ -184,6 +193,8 @@ public class PracticeService {
 
         return analysis;
     }
+
+
 
     /**
      * Calculate the duration of an audio file using its InputStream.
@@ -199,10 +210,9 @@ public class PracticeService {
         AudioFormat format = audioStream.getFormat();
         long frames = audioStream.getFrameLength();
 
-        // Duration = Total frames / Frame rate
+        // Duration in seconds = Total frames / Frame rate
         return (double) frames / format.getFrameRate();
     }
-
 
 
 
@@ -258,33 +268,20 @@ public class PracticeService {
             connection.setReadTimeout(30000);   // 30 seconds
 
             try (InputStream s3InputStream = connection.getInputStream()) {
-                // Calculate decibel using Tarsos DSP
-                double decibel = AudioAnalyzer.calculateAverageDecibel(s3InputStream);
+                // Adjust decibel by adding 100
+                double decibel = AudioAnalyzer.calculateAverageDecibel(s3InputStream) + 95;
 
                 // Fetch transcription JSON from AWS Transcribe
                 String transcriptionJson = transcriptionService.transcribeAudio(bucketName, practice.getAudioFilePath());
 
                 // Use TranscriptionProcessor to calculate metrics
-                double duration = transcriptionProcessor.calculateDurationFromJson(transcriptionJson);
+                double duration = transcriptionProcessor.calculateDurationFromJson(transcriptionJson); // Duration already in seconds
                 double speechSpeed = transcriptionProcessor.calculateSpeechSpeedFromJson(transcriptionJson, duration);
                 int fillerCount = transcriptionProcessor.countFillersFromJson(transcriptionJson);
                 int blankCount = transcriptionProcessor.countBlanksFromJson(transcriptionJson, 3.0); // Adjust threshold if needed
 
-                // Build and save the analysis
-                Analysis analysis = Analysis.builder()
-                        .practice(practice)
-                        .decibel(decibel)
-                        .duration(duration)
-                        .speechSpeed(speechSpeed)
-                        .eyePercentage(eyePercentage)
-                        .fillerCount(fillerCount)
-                        .blankCount(blankCount)
-                        .build();
-
-                analysisRepo.save(analysis);
-
-                // Generate reports for this analysis
-                generateReportsForAnalysis(analysis);
+                // Save the analysis, including the eye percentage
+                analyzeAndSaveMetrics(practice, decibel, duration, speechSpeed, fillerCount, blankCount, eyePercentage);
 
                 // Update the presentation's total score
                 Presentation presentation = practice.getPresentation();
@@ -295,6 +292,8 @@ public class PracticeService {
             throw new RuntimeException("Failed to analyze practice: " + e.getMessage(), e);
         }
     }
+
+
 
 
     /**
