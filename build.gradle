@@ -73,6 +73,13 @@ dependencies {
 
     implementation 'javax.xml.bind:jaxb-api:2.3.1'
 
+    // transcribe
+    implementation 'software.amazon.awssdk:transcribe:2.20.41'
+    implementation 'software.amazon.awssdk:s3:2.20.41'
+
+    //org.json
+    implementation 'org.json:json:20210307'
+
 }
 
 tasks.named('test') {

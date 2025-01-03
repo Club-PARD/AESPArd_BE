@@ -10,10 +10,13 @@ import com.pard.pree_be.feedback.report.service.ReportService;
 import com.pard.pree_be.practice.entity.Practice;
 import com.pard.pree_be.presentation.entity.Presentation;
 import com.pard.pree_be.presentation.repo.PresentationRepo;
+import com.pard.pree_be.utils.TranscriptionProcessor;
+import com.pard.pree_be.utils.TranscriptionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -25,20 +28,29 @@ public class AnalysisService {
     private final AnalysisRepo analysisRepo;
     private final ReportRepo reportRepo;
     private final ReportService reportService;
+    private final TranscriptionService transcriptionService;
+    private final TranscriptionProcessor transcriptionProcessor;
     private final RecentScoresRepo recentScoresRepo;
+
     private final PresentationRepo presentationRepo;
+
 
     /**
      * Generates an analysis for the given practice and creates reports for each feature.
      */
-    public Analysis analyzePractice(Practice practice) {
-        // Simulate or retrieve metric values
-        double duration = 120.0; // Example: Duration in seconds
-        double speechSpeed = 143.0; // Example: Words per minute
-        double decibel = 68.0; // Example: Average decibel
-        int fillerCount = 3; // Example: Filler count
-        int blankCount = 2; // Example: Blank count
-        int eyePercentage = 85; // Example: Eye-tracking percentage
+    public Analysis analyzePractice(Practice practice, String audioFileKey, String bucketName) {
+        // Get the transcription text from AWS Transcribe
+        String transcriptionText = transcriptionService.transcribeAudio(bucketName, audioFileKey);
+        System.out.println("Transcription Text: " + transcriptionText);
+
+        // Process the transcription for filler count, blank count, and speech speed
+        int fillerCount = transcriptionProcessor.countFillers(transcriptionText);
+        int blankCount = transcriptionProcessor.countBlanks(transcriptionText, 3.0); // Example: blank threshold of 3 seconds
+        double speechSpeed = transcriptionProcessor.calculateSpeechSpeed(transcriptionText, practice.getAnalyses().get(0).getDuration());
+
+        // Retrieve the decibel and duration values from the first Analysis in the list
+        double duration = practice.getAnalyses().get(0).getDuration();  // Get the duration from the analysis
+        double decibel = practice.getAnalyses().get(0).getDecibel();    // Get the decibel from the analysis
 
         // Create and save Analysis entity
         Analysis analysis = Analysis.builder()
@@ -48,12 +60,13 @@ public class AnalysisService {
                 .decibel(decibel)
                 .fillerCount(fillerCount)
                 .blankCount(blankCount)
-                .eyePercentage(eyePercentage)
+                .eyePercentage(practice.getEyePercentage()) // You can modify this or retrieve from a different source
                 .build();
         Analysis savedAnalysis = analysisRepo.save(analysis);
 
         // Generate reports for all metrics
         generateReports(savedAnalysis);
+
         return savedAnalysis;
     }
 
@@ -87,7 +100,6 @@ public class AnalysisService {
         // Update the analysis with the calculated total score
         analysis.setTotalScore(overallScore);
         analysisRepo.save(analysis); // Save updated analysis
-
     }
 
     private void updateRecentScores(String metricName, int score) {
