@@ -1,10 +1,12 @@
 package com.pard.pree_be.feedback.report.service;
 
 import com.pard.pree_be.feedback.analysis.entity.Analysis;
+import com.pard.pree_be.feedback.analysis.repo.AnalysisRepo;
 import com.pard.pree_be.feedback.report.entity.Report;
 import com.pard.pree_be.feedback.report.repo.ReportRepo;
 import com.pard.pree_be.feedback.scoring.MetricStandard;
 import com.pard.pree_be.feedback.scoring.ScoringStandards;
+import com.pard.pree_be.presentation.entity.Presentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -14,18 +16,26 @@ import java.util.Map;
 @Service
 public class ReportService {
 
-    @Autowired
-    private ReportRepo reportRepo;
-    /**
-     * Generate a report for the duration metric.
-     */
+    private final ReportRepo reportRepo;
+    private final AnalysisRepo analysisRepo;
+
+    public ReportService(ReportRepo reportRepo, AnalysisRepo analysisRepo) {
+        this.reportRepo = reportRepo;
+        this.analysisRepo = analysisRepo;
+    }
 
     /**
      * Generate reports for all metrics in an analysis and save them.
      */
     public void generateReports(Analysis analysis) {
+        // Retrieve the associated presentation
+        Presentation presentation = analysis.getPractice().getPresentation();
+        int idealMin = (int) presentation.getIdealMinTime(); // Fetch ideal min time
+        int idealMax = (int) presentation.getIdealMaxTime(); // Fetch ideal max time
+
+        // Generate individual reports for each metric
         List<Report> reports = List.of(
-                generateDurationReport(analysis.getDuration()),
+                generateDurationReport(analysis.getDuration(), idealMin, idealMax),
                 generateSpeechSpeedReport(analysis.getSpeechSpeed()),
                 generateDecibelReport(analysis.getDecibel()),
                 generateFillerReport(analysis.getFillerCount()),
@@ -33,68 +43,76 @@ public class ReportService {
                 generateEyeTrackingReport(analysis.getEyePercentage())
         );
 
-        // Link each report to the analysis and save it
+        // Save reports and link them to the analysis
         reports.forEach(report -> {
             report.setAnalysis(analysis);
             reportRepo.save(report);
         });
 
-        // Calculate total weighted score and update the analysis
+        // Calculate total weighted score
         int totalScore = reports.stream()
                 .mapToInt(Report::getTotalScore)
                 .sum();
+
+        // Update the analysis with the total score
         analysis.setTotalScore(totalScore);
+        analysisRepo.save(analysis);
     }
 
-    public Report generateDurationReport(double duration) {
-        MetricStandard standard = ScoringStandards.getStandard("duration");
 
-        if (standard == null) {
-            throw new IllegalArgumentException("No scoring standard found for duration");
-        }
-
+    public Report generateDurationReport(double duration, int idealMin, int idealMax) {
+        int score = 100;
         String feedbackMessage;
-        int score;
 
-        if (duration < standard.getIdealMinValue()) {
-            double diff = standard.getIdealMinValue() - duration;
-            feedbackMessage = String.format("%.1f초가 부족해요, 핵심 내용을 더 자세하게 말해볼까요?", diff);
-            score = 100 - (int) (diff / standard.getPenaltyStep()) * (int) standard.getPenaltyAmount();
-        } else if (duration > standard.getIdealMaxValue()) {
-            double diff = duration - standard.getIdealMaxValue();
-            feedbackMessage = String.format("%.1f초가 초과되었어요, 내용을 더 간략하게 줄여볼까요?", diff);
-            score = 100 - (int) (diff / standard.getPenaltyStep()) * (int) standard.getPenaltyAmount();
+        if (duration < idealMin) {
+            int diff = (int) (idealMin - duration);
+            feedbackMessage = diff + "초가 부족해요. 내용을 조금 더 추가해보세요!";
+            score -= (diff / 10) * 5;
+        } else if (duration > idealMax) {
+            int diff = (int) (duration - idealMax);
+            feedbackMessage = diff + "초가 초과되었어요. 내용을 간략하게 줄여볼까요!";
+            score -= (diff / 10) * 5;
         } else {
             feedbackMessage = "완벽한 시간 관리입니다! 잘하셨습니다.";
-            score = 100;
         }
 
-        return buildReport("duration", duration, Math.max(score, 0), feedbackMessage);
+        score = Math.max(score, 0); // Prevent negative scores
+
+        return buildReport("duration", (int) duration, score, feedbackMessage);
     }
+
+
+
 
 
     /**
      * Generate a report for the speech speed metric.
      */
-    public Report generateSpeechSpeedReport(double speechSpeed) {
-        MetricStandard standard = ScoringStandards.getStandard("speechSpeed");
+    public Report generateSpeechSpeedReport(double speechSpeedSPM) {
+        // Define the ideal range for Korean speech speed in SPM
+        int idealMin = 180;
+        int idealMax = 250;
         int score = 100;
         String feedbackMessage;
 
-        if (speechSpeed < standard.getIdealMinValue()) {
-            int penaltySteps = (int) Math.ceil((standard.getIdealMinValue() - speechSpeed) / standard.getPenaltyStep());
-            score -= penaltySteps * (int) standard.getPenaltyAmount();
-            feedbackMessage = penaltySteps > 4 ? "꽤 느린 편이에요. 조금만 빠르게 말해볼까요?" : "조금 느린 편이에요. 조금만 빠르게 말해볼까요?";
-        } else if (speechSpeed > standard.getIdealMaxValue()) {
-            int penaltySteps = (int) Math.ceil((speechSpeed - standard.getIdealMaxValue()) / standard.getPenaltyStep());
-            score -= penaltySteps * (int) standard.getPenaltyAmount();
-            feedbackMessage = penaltySteps > 4 ? "꽤 빠른 편이에요. 조금만 천천히 말해볼까요?" : "조금 빠른 편이에요. 조금만 천천히 말해볼까요?";
+        if (speechSpeedSPM < idealMin) {
+            int diff = (int) (idealMin - speechSpeedSPM); // Difference in SPM
+            feedbackMessage = diff + "꽤 느린 편이에요. 조금만 빠르게 말해볼까요?";
+            score -= (diff / 10) * 5; // Deduct 5 points per 10 SPM below idealMin
+        } else if (speechSpeedSPM > idealMax) {
+            int diff = (int) (speechSpeedSPM - idealMax); // Difference in SPM
+            feedbackMessage = diff + "꽤 빠른 편이에요. 조금만 천천히 말해볼까요?";
+            score -= (diff / 10) * 5; // Deduct 5 points per 10 SPM above idealMax
         } else {
             feedbackMessage = "완벽한 속도에요! 이 속도를 유지하세요.";
         }
 
-        return buildReport("speechSpeed", speechSpeed, Math.max(score, 0), feedbackMessage);
+        // Ensure score is not negative
+        score = Math.max(score, 0);
+
+        return buildReport("speechSpeed", (int) speechSpeedSPM, score, feedbackMessage);
     }
+
 
     /**
      * Generate a report for the decibel metric.
@@ -161,22 +179,14 @@ public class ReportService {
      * Generate a report for the eye tracking percentage metric.
      */
     public Report generateEyeTrackingReport(int eyePercentage) {
-        String feedbackMessage;
-        int score;
+        int score = eyePercentage >= 85 ? 100 : eyePercentage;
+        String feedbackMessage = score == 100
+                ? "훌륭합니다! 실전에서도 관객과의 소통이 중요해요."
+                : "관객과의 시선을 조금 더 유지해보세요!";
 
-        if (eyePercentage >= 80) {
-            feedbackMessage = "훌륭합니다! 실전에서도 관객과의 소통이 중요해요.";
-            score = 100;
-        } else if (eyePercentage >= 70) {
-            feedbackMessage = "관객을 바라보는 습관을 조금만 더 길러보세요!";
-            score = 100 - (80 - eyePercentage) * 5;
-        } else {
-            feedbackMessage = "관객을 바라보는 습관이 부족해요! 더 많은 연습이 필요해요.";
-            score = 100 - (80 - eyePercentage) * 5;
-        }
-
-        return buildReport("eyeTracking", eyePercentage, Math.max(score, 0), feedbackMessage);
+        return buildReport("eyeTracking", eyePercentage, score, feedbackMessage);
     }
+
 
     private static final Map<String, Double> WEIGHTAGE_MAP = Map.of(
             "eyeTracking", 0.20,

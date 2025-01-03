@@ -164,6 +164,23 @@ public class TranscriptionProcessor {
 
         return blankCount;
     }
+    public double calculateSpeechSPM(String transcriptionText, double durationInSeconds) {
+        // Count total syllables by removing spaces and punctuation
+        int totalSyllables = transcriptionText.replaceAll("\\s+", "").replaceAll("[^가-힣]", "").length();
+
+        // Convert duration to minutes
+        double durationInMinutes = durationInSeconds / 60;
+
+        // Calculate SPM
+        return totalSyllables / durationInMinutes;
+    }
+
+    public String extractTextFromJson(String transcriptionJson) {
+        JSONObject jsonObject = new JSONObject(transcriptionJson);
+        JSONArray transcripts = jsonObject.getJSONObject("results").getJSONArray("transcripts");
+        return transcripts.getJSONObject(0).getString("transcript"); // Extract the first transcript
+    }
+
 
 
 

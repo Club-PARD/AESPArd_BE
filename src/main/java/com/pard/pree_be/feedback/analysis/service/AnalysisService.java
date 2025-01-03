@@ -74,9 +74,14 @@ public class AnalysisService {
      * Generates reports for all features and links them to the analysis.
      */
     public void generateReports(Analysis analysis) {
+        // Retrieve the associated presentation to get idealMin and idealMax
+        Presentation presentation = analysis.getPractice().getPresentation();
+        int idealMin = (int) presentation.getIdealMinTime(); // Assuming idealMinTime is stored in seconds
+        int idealMax = (int) presentation.getIdealMaxTime(); // Assuming idealMaxTime is stored in seconds
+
         // Generate individual reports for each metric
         List<Report> reports = List.of(
-                reportService.generateDurationReport(analysis.getDuration()),
+                reportService.generateDurationReport(analysis.getDuration(), idealMin, idealMax),
                 reportService.generateSpeechSpeedReport(analysis.getSpeechSpeed()),
                 reportService.generateDecibelReport(analysis.getDecibel()),
                 reportService.generateFillerReport(analysis.getFillerCount()),
@@ -101,6 +106,7 @@ public class AnalysisService {
         analysis.setTotalScore(overallScore);
         analysisRepo.save(analysis); // Save updated analysis
     }
+
 
     private void updateRecentScores(String metricName, int score) {
         RecentScores recentScores = recentScoresRepo.findByMetricName(metricName)

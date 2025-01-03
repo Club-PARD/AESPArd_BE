@@ -62,10 +62,12 @@ public class PracticeService {
         Presentation presentation = presentationRepo.findById(presentationId)
                 .orElseThrow(() -> new IllegalArgumentException("Presentation not found"));
 
+        int idealMin = (int) presentation.getIdealMinTime();
+        int idealMax = (int) presentation.getIdealMaxTime();
+
         long practiceCount = practiceRepo.countByPresentation_PresentationId(presentationId) + 1;
         String practiceName = practiceCount + "번째 연습";
 
-        // Create and save the practice first
         Practice practice = Practice.builder()
                 .practiceName(practiceName)
                 .presentation(presentation)
@@ -76,12 +78,11 @@ public class PracticeService {
 
         practiceRepo.save(practice);
 
-        // Save the audio file to S3 using practiceId as file name
         String audioFilePath = saveAudioFile(audioFile, practice.getId());
         practice.setAudioFilePath(audioFilePath);
         practiceRepo.save(practice);
 
-        performAnalysis(practice, eyePercentage);
+        performAnalysis(practice, eyePercentage, idealMin, idealMax);
 
         return PracticeResponseDto.builder()
                 .id(practice.getId())
@@ -95,6 +96,7 @@ public class PracticeService {
 
 
     // 가장 최근 밢표에 새로운 연습 추가하기 👍
+    // 가장 최근 밢표에 새로운 연습 추가하기 👍
     public PracticeResponseDto addPracticeToMostRecentlyUpdatedPresentation(
             UUID userId, String videoKey, int eyePercentage, MultipartFile audioFile) throws IOException {
 
@@ -107,6 +109,10 @@ public class PracticeService {
 
         // Select the first (most recent) presentation
         Presentation mostRecent = presentations.get(0);
+
+        // Retrieve idealMin and idealMax from the presentation
+        int idealMin = (int) mostRecent.getIdealMinTime(); // Get the ideal minimum time
+        int idealMax = (int) mostRecent.getIdealMaxTime(); // Get the ideal maximum time
 
         // Calculate the practice count for naming
         long practiceCount = practiceRepo.countByPresentation_PresentationId(mostRecent.getPresentationId()) + 1;
@@ -129,7 +135,7 @@ public class PracticeService {
         practiceRepo.save(practice); // Update with the audio file path
 
         // Perform analysis on the uploaded audio
-        performAnalysis(practice, eyePercentage);
+        performAnalysis(practice, eyePercentage, idealMin, idealMax);
 
         // Return the response DTO
         return PracticeResponseDto.builder()
@@ -141,41 +147,30 @@ public class PracticeService {
                 .build();
     }
 
-    public Analysis processAudio(MultipartFile audioFile, Long practiceId, int eyePercentage) throws Exception {
-        // Find the practice by ID
+
+    public Analysis processAudio(MultipartFile audioFile, Long practiceId, int eyePercentage, int idealMin, int idealMax) throws Exception {
         Practice practice = practiceRepo.findById(practiceId)
                 .orElseThrow(() -> new IllegalArgumentException("Practice not found"));
 
-        // Upload the audio file to S3
         String audioFilePath = s3Service.upload(audioFile, "audio-files", practiceId);
-
-        // Analyze decibel using Tarsos DSP
-        double decibel = AudioAnalyzer.calculateAverageDecibel(audioFile.getInputStream()) + 100; // Adjusted by adding 100
-
-        // Calculate duration
+        double decibel = AudioAnalyzer.calculateAverageDecibel(audioFile.getInputStream()) + 95;
         double duration = calculateDuration(audioFile.getInputStream());
-
-        // Transcribe the audio
         String transcriptionJson = transcriptionService.transcribeAudio(bucketName, audioFilePath);
 
-        // Calculate metrics
         double speechSpeed = transcriptionProcessor.calculateSpeechSpeed(transcriptionJson, duration);
         int fillerCount = transcriptionProcessor.countFillers(transcriptionJson);
         int blankCount = transcriptionProcessor.countBlanks(transcriptionJson, 3.0);
 
-        // Perform analysis and save results, including eyePercentage
-        return analyzeAndSaveMetrics(practice, decibel, duration, speechSpeed, fillerCount, blankCount, eyePercentage);
+        return analyzeAndSaveMetrics(practice, decibel, duration, speechSpeed, fillerCount, blankCount, eyePercentage, idealMin, idealMax);
     }
 
 
-    private Analysis analyzeAndSaveMetrics(Practice practice, double decibel, double duration,
-                                           double speechSpeed, int fillerCount, int blankCount, int eyePercentage) {
-        // Round and adjust values
+
+    private Analysis analyzeAndSaveMetrics(Practice practice, double decibel, double duration, double speechSpeed, int fillerCount, int blankCount, int eyePercentage, int idealMin, int idealMax) {
         int roundedDecibel = (int) Math.round(decibel);
         int roundedDuration = (int) Math.round(duration);
         int roundedSpeechSpeed = (int) Math.round(speechSpeed);
 
-        // Build and save the analysis entity
         Analysis analysis = Analysis.builder()
                 .practice(practice)
                 .decibel(roundedDecibel)
@@ -187,12 +182,11 @@ public class PracticeService {
                 .build();
 
         analysisRepo.save(analysis);
-
-        // Generate and link reports
-        reportService.generateReports(analysis);
+        generateReportsForAnalysis(analysis, idealMin, idealMax);
 
         return analysis;
     }
+
 
 
 
@@ -259,34 +253,24 @@ public class PracticeService {
     /**
      * Perform analysis on the practice.
      */
-    private void performAnalysis(Practice practice, int eyePercentage) {
+    private void performAnalysis(Practice practice, int eyePercentage, int idealMin, int idealMax) {
         try {
-            // Use the S3 URL to open a stream for analysis
             URL s3Url = new URL(practice.getAudioFilePath());
             HttpURLConnection connection = (HttpURLConnection) s3Url.openConnection();
-            connection.setConnectTimeout(10000); // 10 seconds
-            connection.setReadTimeout(30000);   // 30 seconds
+            connection.setConnectTimeout(10000);
+            connection.setReadTimeout(30000);
 
             try (InputStream s3InputStream = connection.getInputStream()) {
-                // Adjust decibel by adding 100
-                double decibel = AudioAnalyzer.calculateAverageDecibel(s3InputStream) + 95;
+                double decibel = AudioAnalyzer.calculateAverageDecibel(s3InputStream) + 100;
 
-                // Fetch transcription JSON from AWS Transcribe
                 String transcriptionJson = transcriptionService.transcribeAudio(bucketName, practice.getAudioFilePath());
 
-                // Use TranscriptionProcessor to calculate metrics
-                double duration = transcriptionProcessor.calculateDurationFromJson(transcriptionJson); // Duration already in seconds
+                double duration = transcriptionProcessor.calculateDurationFromJson(transcriptionJson);
                 double speechSpeed = transcriptionProcessor.calculateSpeechSpeedFromJson(transcriptionJson, duration);
                 int fillerCount = transcriptionProcessor.countFillersFromJson(transcriptionJson);
-                int blankCount = transcriptionProcessor.countBlanksFromJson(transcriptionJson, 3.0); // Adjust threshold if needed
+                int blankCount = transcriptionProcessor.countBlanksFromJson(transcriptionJson, 3.0);
 
-                // Save the analysis, including the eye percentage
-                analyzeAndSaveMetrics(practice, decibel, duration, speechSpeed, fillerCount, blankCount, eyePercentage);
-
-                // Update the presentation's total score
-                Presentation presentation = practice.getPresentation();
-                presentation.setTotalScore(practice.getTotalScore());
-                presentationRepo.save(presentation);
+                analyzeAndSaveMetrics(practice, decibel, duration, speechSpeed, fillerCount, blankCount, eyePercentage, idealMin, idealMax);
             }
         } catch (Exception e) {
             throw new RuntimeException("Failed to analyze practice: " + e.getMessage(), e);
@@ -294,14 +278,27 @@ public class PracticeService {
     }
 
 
+    public void processTranscriptionAndScore(String transcriptionJson, double duration) {
+        // Use TranscriptionProcessor to calculate SPM
+        String transcriptionText = transcriptionProcessor.extractTextFromJson(transcriptionJson); // Parse JSON for text
+        double speechSPM = transcriptionProcessor.calculateSpeechSPM(transcriptionText, duration);
+
+        // Generate report for speech speed
+        Report speechSpeedReport = reportService.generateSpeechSpeedReport(speechSPM);
+        reportRepo.save(speechSpeedReport);
+    }
+
+
+
+
 
 
     /**
      * Generate reports for the analysis.
      */
-    private void generateReportsForAnalysis(Analysis analysis) {
+    private void generateReportsForAnalysis(Analysis analysis, int idealMin, int idealMax) {
         List<Report> reports = List.of(
-                reportService.generateDurationReport(analysis.getDuration()),
+                reportService.generateDurationReport(analysis.getDuration(), idealMin, idealMax),
                 reportService.generateSpeechSpeedReport(analysis.getSpeechSpeed()),
                 reportService.generateDecibelReport(analysis.getDecibel()),
                 reportService.generateFillerReport(analysis.getFillerCount()),
@@ -313,16 +310,14 @@ public class PracticeService {
             report.setAnalysis(analysis);
             reportRepo.save(report);
         });
-        // Calculate the total score
+
         int totalScore = reports.stream()
-                .mapToInt(Report::getTotalScore) // Assuming each Report has a totalScore field
+                .mapToInt(Report::getTotalScore)
                 .sum();
 
-        // Update the Practice with the total score
         Practice practice = analysis.getPractice();
         practice.setTotalScore(totalScore);
         practiceRepo.save(practice);
-
     }
 
 
