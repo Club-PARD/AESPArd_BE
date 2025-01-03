@@ -133,23 +133,12 @@
 
 <br/>
 
-# BACKEND 기술 스텍
-
-### FrontEnd
+## 💻 FrontEnd Tech Stack
 
   ![iOS](https://img.shields.io/badge/iOS-000000?style=for-the-badge&logo=ios&logoColor=white)
   ![Swift](https://img.shields.io/badge/swift-F54A2A?style=for-the-badge&logo=swift&logoColor=white)
 
-### BackEnd
-
-![bedge](https://img.shields.io/badge/SpringBoot-6DB33F?style=flat&logo=springboot&logoColor=white)
-![bedge](https://img.shields.io/badge/MySQL-4479A1?style=flat&logo=MySQL&logoColor=white)
-![bedge](https://img.shields.io/badge/JAVA-ED8B00?style=flat&logo=Openjdk&logoColor=white)
-<img src="https://img.shields.io/badge/AWS-232F3E?style=for-the-badge&logo=amazon-aws&logoColor=white" />
-<img src="https://img.shields.io/badge/SpringBoot-6DB33F?style=for-the-badge&logo=springboot&logoColor=white" />
-<img src="https://img.shields.io/badge/JPA-59666C?style=for-the-badge&logo=hibernate&logoColor=white" />
-
-### 협업도구
+## 👥 협업도구
 ![bedge](https://img.shields.io/badge/Figma-F24E1E?style=flat&logo=Figma&logoColor=white)
 ![bedge](https://img.shields.io/badge/Notion-FFFFFF?style=flat&logo=notion&logoColor=black)
 ![bedge](https://img.shields.io/badge/slack-FFFFFF?style=flat&logo=slack&logoColor=skyblue)<br />
@@ -158,225 +147,105 @@
 
 <br/>
 
-# 💻 간단한 블로그 플렛폼 API
+## 🛠️ Backend
+![bedge](https://img.shields.io/badge/SpringBoot-6DB33F?style=flat&logo=springboot&logoColor=white)
+![bedge](https://img.shields.io/badge/MySQL-4479A1?style=flat&logo=MySQL&logoColor=white)
+![bedge](https://img.shields.io/badge/JAVA-ED8B00?style=flat&logo=Openjdk&logoColor=white)
+<img src="https://img.shields.io/badge/AWS-232F3E?style=for-the-badge&logo=amazon-aws&logoColor=white" />
+<img src="https://img.shields.io/badge/SpringBoot-6DB33F?style=for-the-badge&logo=springboot&logoColor=white" />
+<img src="https://img.shields.io/badge/JPA-59666C?style=for-the-badge&logo=hibernate&logoColor=white" />
 
-## 기능:
++ TarsosDSP - 오디오 분석 Java Library
++ AWS Transcribe - STT ( Speech to Text )
 
-1. **[유저 관리](#1-user-feature-testing)**
-  - **유저 추가**
-  - **유저 조회**
-  - **유저 정보 엡데이트**
-  - **유저 삭제**
-
-2. **[계시글 관리](#2-post-feature-testing)**
-  - **계시글 작성**
-  - **하눈에 모든 계시글 보기**
-  - **ID 로 계시글 불러오기**
-  - **계시글 수정**
-  - **계시글 삭제**
-
-3. **[좋아요 기능](#3-like-feature-testing)**
-  - **좋아요 토글** (Users can like or unlike a post)
-  - **Retrieve Like Count** (See the total number of likes for each post)
-
-### Swagger 화룡앟여 test 하기
-'http://localhost:8080/swagger-ui/index.html#/'
-
----
-
-## 1. **User Feature Testing**
+### 1. **User**
 
 <table>
-<tr>
-<td>
-  
-#### a. **유저 추가하기r**
-- **Endpoint**: `POST /user`
-- **Try it out json**:
- 
-     ```json 
-     {
-       "name": "Naim Kim"
-     }
-     ```
-  - **Results 👉👉👉**
 
-</td>
-<td>
+<tr>
 
 <img src="img_1.png" alt="Image" width="100%"/>
 
-</td>
 </tr>
-
 <tr>
-<td>
 
-#### b. **유저 조회하기 by ID**
-
-- **Endpoint**: `GET /user/{userId}`
-- **Try it out**.
-  - Execute with a valid `userId`.
-- **Results 👉👉👉**
-
-</td>
-<td>
-
-<img src="img_2.png" alt="Image"/>
-
-</td>
+ 유저 생성 + 유저별 데이타 관리
 </tr>
 
-<tr>
-<td>
-
-#### c. **유저 정보 엡데이트**
-
-- **Endpoint**: `PATCH /user/{userId}`
-- **Try it out json**.
-     ```json
-     {
-       "name": "Naanim Kim"
-     }
-     ```
-- **Results 👉👉👉**
-
-</td>
-<td>
-
-<img src="img_3.png" alt="Image"/>
-
-</td>
-</tr>
 </table>
 
 ---
 
-## 2. **Post Feature Testing**
+### 2. **Presentation**
 
 <table>
+
 <tr>
-<td>
 
-#### a. **Create a Post**
+<img src="img_2.png" alt="Image" width="100%"/>
 
-- **Endpoint**: `POST /post/{userId}`
-- **Try it out json**.
-     ```json
-     {
-       "title": "오늘의 일기",
-       "content": "피곤하다."
-     }
-     ```
-- **Results 👉👉👉**
-
-</td>
-<td>
-
-<img src="img_5.png" alt="Image"/>
-
-</td>
 </tr>
-
 <tr>
-<td>
 
-#### b. **하눈에 모든 계시글 보기**
+- 유저별 발표생성
+- 발표 리스트 불러오기
+  - 최신순
+  - 중요도 표시순
+- 발표 이름 변경 / 중요도 토글 
+- 발표 삭제
+  - 개별삭제
+  - 여러개 한번에 선택 삭제
+  - 유저 내 모든 발표 삭제
 
-- **Endpoint**: `GET /post`
-- **Results 👉👉👉**
-
-</td>
-<td>
-
-<img src="img_7.png" alt="Image"/>
-
-</td>
-</tr>
-
-<tr>
-<td>
-
-#### c. **ID 로 계시글 불러오기**
-
-- **Endpoint**: `GET /post/{postId}`
-- **Execute**.
-- **Results 👉👉👉**
-
-</td>
-<td>
-
-<img src="img_6.png" alt="Image"/>
-
-</td>
-</tr>
-
-<tr>
-<td>
-
-#### d. **Update a Post**
-
-- **Endpoint**: `PATCH /post/{postId}/{userId}`
-- **Try it out json**.
-     ```json
-     {
-       "title": "어제 예언의 확신",
-       "content": "피곤하다."
-     }
-     ```
-- **Results 👉👉👉**
-
-</td>
-<td>
-
-<img src="img_8.png" alt="Image"/>
-
-</td>
-</tr>
-
-<tr>
-<td>
-
-#### e. **Delete a Post**
-
-- **Endpoint**: `DELETE /post/{postId}/{userId}`
-- Select wnated post and Execute.
-- **Results 👉👉👉**
-
-</td>
-<td>
-
-<img src="img_9.png" alt="Image"/>
-
-</td>
 </tr>
 
 </table>
 
 ---
 
-## 3. **Like Feature Testing**
+### 3. **Practice**
 
 <table>
+
 <tr>
-<td>
 
-#### a. **Toggle Like on a Post**
+<img src="img_3.png" alt="Image" width="100%"/>
 
-- **Endpoint**: `POST /like/{postId}/{userId}`
-- Enter postId and userId to toggle like
-- **Results 👉👉👉**
-
-</td>
-<td>
-
-<img src="img_10.png" alt="Toggle Like Image"/>
-
-다시 "누른다면"
-<img src="img_11.png" alt="Toggle Unlike Image"/>
-</td>
 </tr>
+<tr>
+
+- 연습 생성 
+  - 최금 발표에 새로운 연습 추가
+  - 선택한 발표에 연습 추가
+- 연습 리스트 불러오기
+- 최근 연습 별 점수 불러오기
+- 연습 이름 변경
+- 연습 삭제
+  - 개별 삭제
+  - 여러 연습 선택후 삭제
+
+</tr>
+
 </table>
 
 ---
 
+### 4. **Analysis + Report**
+
+<table>
+
+<tr>
+
+<img src="img_4.png" alt="Image" width="100%"/>
+
+</tr>
+<tr>
+
+- 새로운 연습 추가시 Analysis 생성 후 각 항목별 Report 생성
+
+</tr>
+
+</table>
+
+## 🚩ERD (Entity Relationship Diagram)
+<img src="img_5.png" alt="Image" width="100%"/>
