@@ -12,6 +12,7 @@ import com.pard.pree_be.practice.repo.PracticeRepo;
 import com.pard.pree_be.presentation.entity.Presentation;
 import com.pard.pree_be.presentation.repo.PresentationRepo;
 import com.pard.pree_be.utils.AudioAnalyzer;
+import com.pard.pree_be.utils.S3Service;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,8 +20,12 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -39,6 +44,8 @@ public class PracticeService {
     private final AnalysisRepo analysisRepo;
     private final ReportRepo reportRepo;
     private final ReportService reportService;
+    private final S3Service s3Service;
+
 
     /**
      * Add a new practice to an existing presentation.
@@ -49,35 +56,35 @@ public class PracticeService {
 
         long practiceCount = practiceRepo.countByPresentation_PresentationId(presentationId) + 1;
         String practiceName = practiceCount + "번째 연습";
-        String audioFilePath = saveAudioFile(audioFile);
 
+        // Create and save the practice first
         Practice practice = Practice.builder()
                 .practiceName(practiceName)
                 .presentation(presentation)
                 .practiceCreatedAt(LocalDateTime.now())
                 .videoKey(videoKey)
                 .eyePercentage(eyePercentage)
-                .audioFile(audioFile.getBytes())
-                .audioFilePath(audioFilePath)
                 .build();
 
-        // Increment total practices in the presentation
-        presentation.incrementTotalPractices();
+        practiceRepo.save(practice);
+
+        // Save the audio file to S3 using practiceId as file name
+        String audioFilePath = saveAudioFile(audioFile, practice.getId());
+        practice.setAudioFilePath(audioFilePath);
         practiceRepo.save(practice);
 
         performAnalysis(practice, eyePercentage);
 
-
-
         return PracticeResponseDto.builder()
                 .id(practice.getId())
                 .practiceName(practice.getPracticeName())
-                .practiceCreatedAt(LocalDateTime.now())
+                .practiceCreatedAt(practice.getPracticeCreatedAt())
                 .totalScore(practice.getTotalScore())
                 .presentationTotalScore(presentation.getTotalScore())
                 .videoKey(practice.getVideoKey())
                 .build();
     }
+
 
     // 가장 최근 밢표에 새로운 연습 추가하기 👍
     public PracticeResponseDto addPracticeToMostRecentlyUpdatedPresentation(
@@ -97,23 +104,23 @@ public class PracticeService {
         long practiceCount = practiceRepo.countByPresentation_PresentationId(mostRecent.getPresentationId()) + 1;
         String practiceName = practiceCount + " 번째 연습";
 
-        // Save the audio file and get its path
-        String audioFilePath = saveAudioFile(audioFile);
-
-        // Build the new Practice entity
+        // Create and save the practice first
         Practice practice = Practice.builder()
                 .practiceName(practiceName)
                 .presentation(mostRecent)
                 .practiceCreatedAt(LocalDateTime.now())
                 .videoKey(videoKey)
                 .eyePercentage(eyePercentage)
-                .audioFilePath(audioFilePath)
                 .build();
 
-        // Save the practice entity
-        practiceRepo.save(practice);
+        practiceRepo.save(practice); // Save to generate the practice ID
 
-        // Perform analysis on the practice
+        // Save the audio file to S3 using the generated practiceId
+        String audioFilePath = saveAudioFile(audioFile, practice.getId());
+        practice.setAudioFilePath(audioFilePath);
+        practiceRepo.save(practice); // Update with the audio file path
+
+        // Perform analysis on the uploaded audio
         performAnalysis(practice, eyePercentage);
 
         // Return the response DTO
@@ -125,6 +132,7 @@ public class PracticeService {
                 .videoKey(practice.getVideoKey())
                 .build();
     }
+
 
 
     public List<PracticeDto> getPracticesByPresentationId(UUID presentationId) {
@@ -172,36 +180,49 @@ public class PracticeService {
      */
     private void performAnalysis(Practice practice, int eyePercentage) {
         try {
-            double decibel = AudioAnalyzer.calculateAverageDecibel(practice.getAudioFilePath()) + 100;
-            double duration = getAudioDuration(practice.getAudioFilePath());
+            // Use the S3 URL to open a stream for analysis
+            URL s3Url = new URL(practice.getAudioFilePath());
+            HttpURLConnection connection = (HttpURLConnection) s3Url.openConnection();
+            connection.setConnectTimeout(10000); // 10 seconds
+            connection.setReadTimeout(30000);   // 30 seconds
 
-            int fillerCount = 3;
-            int blankCount = 2;
-            double speechSpeed = 143.0;
+            try (InputStream s3InputStream = connection.getInputStream()) {
+                // Wrap the input stream in BufferedInputStream
+                InputStream audioInputStream = new BufferedInputStream(new URL(practice.getAudioFilePath()).openStream());
+                double decibel = AudioAnalyzer.calculateAverageDecibel(audioInputStream);
 
-            Analysis analysis = Analysis.builder()
-                    .practice(practice)
-                    .decibel(decibel)
-                    .duration(duration)
-                    .eyePercentage(eyePercentage)
-                    .fillerCount(fillerCount)
-                    .blankCount(blankCount)
-                    .speechSpeed(speechSpeed)
-                    .build();
+                // Dummy placeholder values
+                int fillerCount = 3;
+                int blankCount = 2;
+                double speechSpeed = 143.0;
 
-            analysisRepo.save(analysis);
+                Analysis analysis = Analysis.builder()
+                        .practice(practice)
+                        .decibel(decibel)
+                        .duration(0.0) // Duration removed
+                        .eyePercentage(eyePercentage)
+                        .fillerCount(fillerCount)
+                        .blankCount(blankCount)
+                        .speechSpeed(speechSpeed)
+                        .build();
 
-            generateReportsForAnalysis(analysis);
+                analysisRepo.save(analysis);
+                generateReportsForAnalysis(analysis);
 
-            // Update the presentation's total score with the practice's total score
-            Presentation presentation = practice.getPresentation();
-            presentation.setTotalScore(practice.getTotalScore());
-            presentationRepo.save(presentation);
-
+                // Update the presentation's total score
+                Presentation presentation = practice.getPresentation();
+                presentation.setTotalScore(practice.getTotalScore());
+                presentationRepo.save(presentation);
+            }
         } catch (Exception e) {
             throw new RuntimeException("Failed to analyze practice: " + e.getMessage(), e);
         }
     }
+
+
+
+
+
 
 
     /**
@@ -233,31 +254,15 @@ public class PracticeService {
 
     }
 
-    /**
-     * Calculate audio duration.
-     */
-    private double getAudioDuration(String audioFilePath) throws Exception {
-        File audioFile = new File(audioFilePath);
-        AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(audioFile);
-        AudioFormat format = audioInputStream.getFormat();
-        long frames = audioInputStream.getFrameLength();
-        return (frames + 0.0) / format.getFrameRate();
-    }
 
     /**
      * Save audio file to disk.
      */
-    private String saveAudioFile(MultipartFile audioFile) throws IOException {
-        Path audioPath = Paths.get("uploads");
-
-        if (!Files.exists(audioPath)) {
-            Files.createDirectories(audioPath);
-        }
-        String audioFileName = UUID.randomUUID() + ".wav";
-        Path filePath = audioPath.resolve(audioFileName);
-        Files.write(filePath, audioFile.getBytes());
-        return filePath.toString();
+    private String saveAudioFile(MultipartFile audioFile, Long practiceId) throws IOException {
+        return s3Service.upload(audioFile, "audio-files", practiceId);
     }
+
+
 
     public void deletePractice(Long practiceId) {
         Practice practice = practiceRepo.findById(practiceId)
