@@ -3,6 +3,10 @@ package com.pard.pree_be.utils;
 import com.amazonaws.services.transcribe.AmazonTranscribe;
 import com.amazonaws.services.transcribe.model.*;
 import org.springframework.stereotype.Service;
+import org.apache.commons.io.IOUtils;
+
+import java.io.InputStream;
+import java.net.URL;
 import java.util.UUID;
 
 @Service
@@ -59,7 +63,12 @@ public class TranscriptionService {
     }
 
     private String fetchTranscript(String transcriptUri) {
-        // Implement fetching the transcript from the URL
-        return ""; // Placeholder: You can use an HTTP client like RestTemplate to download the transcript.
+        try {
+            URL url = new URL(transcriptUri);
+            InputStream inputStream = url.openStream();
+            return IOUtils.toString(inputStream, "UTF-8"); // Return the transcription JSON
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to fetch transcript: " + e.getMessage(), e);
+        }
     }
 }
