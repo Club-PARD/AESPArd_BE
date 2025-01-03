@@ -6,8 +6,10 @@ import com.pard.pree_be.user.dto.UserRequestDto;
 import com.pard.pree_be.user.entity.User;
 import com.pard.pree_be.user.repo.UserRepo;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -41,5 +43,12 @@ public class UserService {
                 .map(user -> new UserResponseDto(user.getUserName(), user.getEmail()))
                 .orElseThrow(() -> new IllegalArgumentException("User not found for ID: " + userId));
     }
+
+    public List<UUID> getAllUserIds() {
+        return userRepo.findAll().stream()
+                .map(User::getUserId)
+                .collect(Collectors.toList());
+    }
+
 
 }

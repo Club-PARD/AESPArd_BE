@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -37,5 +38,13 @@ public class UserController {
         UserResponseDto userDetails = userService.getUserNameAndEmailById(id);
         return ResponseEntity.ok(userDetails);
     }
+
+    @Operation(summary = "모든 사용자 ID 조회 ✅", description = "모든 사용자의 UUID를 리스트 형태로 반환")
+    @GetMapping("/ids")
+    public ResponseEntity<List<UUID>> getAllUserIds() {
+        List<UUID> userIds = userService.getAllUserIds();
+        return ResponseEntity.ok(userIds);
+    }
+
 
 }
