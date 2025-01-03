@@ -17,12 +17,12 @@ import java.util.UUID;
 public class Report {
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
-    private UUID id;
+    private Long id;
 
-    private String name; // Metric name (e.g., "duration", "speechSpeed")
-    private int counter; // Raw metric value
-    private int score; // Calculated score (0-100)
-    private String feedbackMessage; // Generated feedback for the user
+    private String name;
+    private int counter;
+    private int score;
+    private String feedbackMessage;
 
     @ManyToOne
     @JoinColumn(name = "analysis_id", nullable = false)

@@ -16,7 +16,7 @@ public class PracticeDto {
     @JsonProperty("createdAt")
     private LocalDateTime practiceCreatedAt;
     private int totalScore;
-    private UUID analysisId;
+    private Long analysisId;
     private String videoKey;
 
 }
