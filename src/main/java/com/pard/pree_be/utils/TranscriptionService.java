@@ -18,49 +18,44 @@ public class TranscriptionService {
         this.amazonTranscribe = amazonTranscribe;
     }
 
-    public String transcribeAudio(String bucketName, String audioFileKey) {
+    public String transcribeAudio(String bucketName, String s3Uri) {
         String jobName = "TranscriptionJob-" + UUID.randomUUID();
 
-        // Create transcription job request with Korean language code as a string
         StartTranscriptionJobRequest request = new StartTranscriptionJobRequest()
                 .withTranscriptionJobName(jobName)
-                .withMedia(new Media().withMediaFileUri("s3://" + bucketName + "/" + audioFileKey))
-                .withMediaFormat(MediaFormat.Wav)
-                .withLanguageCode("ko-KR"); // Set to Korean (ko-KR) as a string
+                .withMedia(new Media().withMediaFileUri(s3Uri))
+                .withMediaFormat(MediaFormat.Wav) // Ensure correct format
+                .withLanguageCode("ko-KR");
 
-        // Start transcription job
-        amazonTranscribe.startTranscriptionJob(request);
+        try {
+            // Start transcription job
+            amazonTranscribe.startTranscriptionJob(request);
 
-        // Create a request to check job status
-        GetTranscriptionJobRequest getRequest = new GetTranscriptionJobRequest()
-                .withTranscriptionJobName(jobName);
+            // Check job status
+            GetTranscriptionJobRequest getRequest = new GetTranscriptionJobRequest()
+                    .withTranscriptionJobName(jobName);
 
-        TranscriptionJob job;
-        do {
-            job = amazonTranscribe.getTranscriptionJob(getRequest).getTranscriptionJob();
+            TranscriptionJob job;
+            do {
+                job = amazonTranscribe.getTranscriptionJob(getRequest).getTranscriptionJob();
+                String status = job.getTranscriptionJobStatus();
 
-            // Get the transcription job status
-            String status = job.getTranscriptionJobStatus();
+                if (TranscriptionJobStatus.COMPLETED.toString().equals(status)) {
+                    String transcriptUri = job.getTranscript().getTranscriptFileUri();
+                    return fetchTranscript(transcriptUri);
+                } else if (TranscriptionJobStatus.FAILED.toString().equals(status)) {
+                    throw new RuntimeException("Transcription failed: " + job.getFailureReason());
+                }
 
-            if (TranscriptionJobStatus.COMPLETED.toString().equals(status)) {
-                // If completed, fetch the transcript URI
-                String transcriptUri = job.getTranscript().getTranscriptFileUri();
-                return fetchTranscript(transcriptUri);  // You need to implement this method
-            } else if (TranscriptionJobStatus.FAILED.toString().equals(status)) {
-                // If failed, provide reason
-                throw new RuntimeException("Transcription failed: " + job.getFailureReason());
-            }
+                Thread.sleep(5000); // Poll every 5 seconds
+            } while (TranscriptionJobStatus.IN_PROGRESS.toString().equals(job.getTranscriptionJobStatus()));
 
-            try {
-                Thread.sleep(5000); // Wait for transcription job to finish
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        } while (TranscriptionJobStatus.IN_PROGRESS.toString().equals(job.getTranscriptionJobStatus()));
-
-        // Fallback: If status isn't completed or failed, return an error message
-        throw new RuntimeException("Transcription job did not complete successfully.");
+            throw new RuntimeException("Transcription job did not complete.");
+        } catch (Exception e) {
+            throw new RuntimeException("Error during transcription: " + e.getMessage(), e);
+        }
     }
+
 
     private String fetchTranscript(String transcriptUri) {
         try {

@@ -1,18 +1,51 @@
 package com.pard.pree_be.feedback.report.service;
 
+import com.pard.pree_be.feedback.analysis.entity.Analysis;
 import com.pard.pree_be.feedback.report.entity.Report;
+import com.pard.pree_be.feedback.report.repo.ReportRepo;
 import com.pard.pree_be.feedback.scoring.MetricStandard;
 import com.pard.pree_be.feedback.scoring.ScoringStandards;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Map;
 
 @Service
 public class ReportService {
 
+    @Autowired
+    private ReportRepo reportRepo;
     /**
      * Generate a report for the duration metric.
      */
+
+    /**
+     * Generate reports for all metrics in an analysis and save them.
+     */
+    public void generateReports(Analysis analysis) {
+        List<Report> reports = List.of(
+                generateDurationReport(analysis.getDuration()),
+                generateSpeechSpeedReport(analysis.getSpeechSpeed()),
+                generateDecibelReport(analysis.getDecibel()),
+                generateFillerReport(analysis.getFillerCount()),
+                generateBlankReport(analysis.getBlankCount()),
+                generateEyeTrackingReport(analysis.getEyePercentage())
+        );
+
+        // Link each report to the analysis and save it
+        reports.forEach(report -> {
+            report.setAnalysis(analysis);
+            reportRepo.save(report);
+        });
+
+        // Calculate total weighted score and update the analysis
+        int totalScore = reports.stream()
+                .mapToInt(Report::getTotalScore)
+                .sum();
+        analysis.setTotalScore(totalScore);
+    }
+
     public Report generateDurationReport(double duration) {
         MetricStandard standard = ScoringStandards.getStandard("duration");
 

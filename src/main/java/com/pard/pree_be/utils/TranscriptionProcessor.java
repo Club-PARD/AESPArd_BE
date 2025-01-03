@@ -59,4 +59,112 @@ public class TranscriptionProcessor {
 
         return syllableCount;
     }
+
+    public double calculateDurationFromJson(String transcriptionJson) {
+        JSONObject json = new JSONObject(transcriptionJson);
+        JSONArray items = json.getJSONObject("results").getJSONArray("items");
+
+        double startTime = -1;
+        double endTime = -1;
+
+        for (int i = 0; i < items.length(); i++) {
+            JSONObject item = items.getJSONObject(i);
+
+            // Skip items without start_time or end_time
+            if (!item.has("start_time") || !item.has("end_time")) {
+                continue;
+            }
+
+            // Update startTime for the first valid item
+            if (startTime == -1) {
+                startTime = item.getDouble("start_time");
+            }
+
+            // Update endTime for the last valid item
+            endTime = item.getDouble("end_time");
+        }
+
+        if (startTime == -1 || endTime == -1) {
+            throw new IllegalArgumentException("No valid pronunciation items found in transcription JSON.");
+        }
+
+        return endTime - startTime;
+    }
+
+
+    public double calculateSpeechSpeedFromJson(String transcriptionJson, double duration) {
+        JSONObject json = new JSONObject(transcriptionJson);
+        JSONArray items = json.getJSONObject("results").getJSONArray("items");
+
+        int wordCount = 0;
+
+        for (int i = 0; i < items.length(); i++) {
+            JSONObject item = items.getJSONObject(i);
+
+            // Count only pronunciation items
+            if ("pronunciation".equals(item.getString("type"))) {
+                wordCount++;
+            }
+        }
+
+        if (duration <= 0) {
+            throw new IllegalArgumentException("Duration must be greater than zero.");
+        }
+
+        return wordCount / (duration / 60.0); // Words per minute
+    }
+
+
+    public int countFillersFromJson(String transcriptionJson) {
+        JSONObject json = new JSONObject(transcriptionJson);
+        JSONArray items = json.getJSONObject("results").getJSONArray("items");
+
+        String[] fillers = {"음", "아", "어", "흠"};
+        int fillerCount = 0;
+
+        for (int i = 0; i < items.length(); i++) {
+            JSONObject item = items.getJSONObject(i);
+            if ("pronunciation".equals(item.getString("type"))) {
+                String content = item.getJSONArray("alternatives").getJSONObject(0).getString("content");
+                for (String filler : fillers) {
+                    if (content.equals(filler)) {
+                        fillerCount++;
+                    }
+                }
+            }
+        }
+
+        return fillerCount;
+    }
+
+    public int countBlanksFromJson(String transcriptionJson, double blankThreshold) {
+        JSONObject json = new JSONObject(transcriptionJson);
+        JSONArray items = json.getJSONObject("results").getJSONArray("items");
+
+        int blankCount = 0;
+        double lastEndTime = -1;
+
+        for (int i = 0; i < items.length(); i++) {
+            JSONObject item = items.getJSONObject(i);
+
+            // Skip items without valid start_time or end_time
+            if (!item.has("start_time") || !item.has("end_time")) {
+                continue;
+            }
+
+            double startTime = item.getDouble("start_time");
+            double endTime = item.getDouble("end_time");
+
+            if (lastEndTime != -1 && (startTime - lastEndTime) > blankThreshold) {
+                blankCount++;
+            }
+
+            lastEndTime = endTime;
+        }
+
+        return blankCount;
+    }
+
+
+
 }

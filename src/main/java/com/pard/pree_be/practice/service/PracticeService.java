@@ -13,7 +13,10 @@ import com.pard.pree_be.presentation.entity.Presentation;
 import com.pard.pree_be.presentation.repo.PresentationRepo;
 import com.pard.pree_be.utils.AudioAnalyzer;
 import com.pard.pree_be.utils.S3Service;
+import com.pard.pree_be.utils.TranscriptionProcessor;
+import com.pard.pree_be.utils.TranscriptionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -45,6 +48,11 @@ public class PracticeService {
     private final ReportRepo reportRepo;
     private final ReportService reportService;
     private final S3Service s3Service;
+    private final TranscriptionService transcriptionService;
+    private final TranscriptionProcessor transcriptionProcessor;
+
+    @Value("${cloud.aws.s3.bucket}")
+    private String bucketName;
 
 
     /**
@@ -133,6 +141,69 @@ public class PracticeService {
                 .build();
     }
 
+    public Analysis processAudio(MultipartFile audioFile, Long practiceId) throws Exception {
+        Practice practice = practiceRepo.findById(practiceId)
+                .orElseThrow(() -> new IllegalArgumentException("Practice not found"));
+
+        // Upload to S3
+        String audioFilePath = s3Service.upload(audioFile, "audio-files", practiceId);
+
+        // Analyze decibel using Tarsos
+        double decibel = AudioAnalyzer.calculateAverageDecibel(audioFile.getInputStream());
+
+        // Calculate duration
+        double duration = calculateDuration(audioFile.getInputStream());
+
+        // Transcribe audio
+        String transcriptionJson = transcriptionService.transcribeAudio(bucketName, audioFilePath);
+
+        // Calculate metrics
+        double speechSpeed = transcriptionProcessor.calculateSpeechSpeed(transcriptionJson, duration);
+        int fillerCount = transcriptionProcessor.countFillers(transcriptionJson);
+        int blankCount = transcriptionProcessor.countBlanks(transcriptionJson, 3.0);
+
+        // Perform analysis and save results
+        return analyzeAndSaveMetrics(practice, decibel, duration, speechSpeed, fillerCount, blankCount);
+    }
+
+    private Analysis analyzeAndSaveMetrics(Practice practice, double decibel, double duration,
+                                           double speechSpeed, int fillerCount, int blankCount) {
+        Analysis analysis = Analysis.builder()
+                .practice(practice)
+                .decibel(decibel)
+                .duration(duration)
+                .speechSpeed(speechSpeed)
+                .fillerCount(fillerCount)
+                .blankCount(blankCount)
+                .build();
+
+        analysisRepo.save(analysis);
+
+        // Generate and link reports
+        reportService.generateReports(analysis);
+
+        return analysis;
+    }
+
+    /**
+     * Calculate the duration of an audio file using its InputStream.
+     */
+    private double calculateDuration(InputStream audioInputStream) throws Exception {
+        // Wrap the InputStream for buffering
+        InputStream bufferedStream = new BufferedInputStream(audioInputStream);
+
+        // Convert to AudioInputStream for duration analysis
+        AudioInputStream audioStream = AudioSystem.getAudioInputStream(bufferedStream);
+
+        // Get format details
+        AudioFormat format = audioStream.getFormat();
+        long frames = audioStream.getFrameLength();
+
+        // Duration = Total frames / Frame rate
+        return (double) frames / format.getFrameRate();
+    }
+
+
 
 
     public List<PracticeDto> getPracticesByPresentationId(UUID presentationId) {
@@ -187,26 +258,32 @@ public class PracticeService {
             connection.setReadTimeout(30000);   // 30 seconds
 
             try (InputStream s3InputStream = connection.getInputStream()) {
-                // Wrap the input stream in BufferedInputStream
-                InputStream audioInputStream = new BufferedInputStream(new URL(practice.getAudioFilePath()).openStream());
-                double decibel = AudioAnalyzer.calculateAverageDecibel(audioInputStream);
+                // Calculate decibel using Tarsos DSP
+                double decibel = AudioAnalyzer.calculateAverageDecibel(s3InputStream);
 
-                // Dummy placeholder values
-                int fillerCount = 3;
-                int blankCount = 2;
-                double speechSpeed = 143.0;
+                // Fetch transcription JSON from AWS Transcribe
+                String transcriptionJson = transcriptionService.transcribeAudio(bucketName, practice.getAudioFilePath());
 
+                // Use TranscriptionProcessor to calculate metrics
+                double duration = transcriptionProcessor.calculateDurationFromJson(transcriptionJson);
+                double speechSpeed = transcriptionProcessor.calculateSpeechSpeedFromJson(transcriptionJson, duration);
+                int fillerCount = transcriptionProcessor.countFillersFromJson(transcriptionJson);
+                int blankCount = transcriptionProcessor.countBlanksFromJson(transcriptionJson, 3.0); // Adjust threshold if needed
+
+                // Build and save the analysis
                 Analysis analysis = Analysis.builder()
                         .practice(practice)
                         .decibel(decibel)
-                        .duration(0.0) // Duration removed
+                        .duration(duration)
+                        .speechSpeed(speechSpeed)
                         .eyePercentage(eyePercentage)
                         .fillerCount(fillerCount)
                         .blankCount(blankCount)
-                        .speechSpeed(speechSpeed)
                         .build();
 
                 analysisRepo.save(analysis);
+
+                // Generate reports for this analysis
                 generateReportsForAnalysis(analysis);
 
                 // Update the presentation's total score
@@ -218,11 +295,6 @@ public class PracticeService {
             throw new RuntimeException("Failed to analyze practice: " + e.getMessage(), e);
         }
     }
-
-
-
-
-
 
 
     /**
