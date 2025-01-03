@@ -259,13 +259,13 @@ public class PracticeService {
         return filePath.toString();
     }
 
-    public void deletePractice(UUID practiceId) {
+    public void deletePractice(Long practiceId) {
         Practice practice = practiceRepo.findById(practiceId)
                 .orElseThrow(() -> new IllegalArgumentException("Practice not found"));
         practiceRepo.delete(practice);
     }
 
-    public void batchDeletePractices(List<UUID> practiceIds) {
+    public void batchDeletePractices(List<Long> practiceIds) {
         List<Practice> practices = practiceRepo.findAllById(practiceIds);
         if (practices.isEmpty()) {
             throw new IllegalArgumentException("No practices found for the given IDs");
@@ -273,7 +273,7 @@ public class PracticeService {
         practiceRepo.deleteAll(practices);
     }
 
-    public void updatePracticeName(UUID practiceId, String newName) {
+    public void updatePracticeName(Long practiceId, String newName) {
         Practice practice = practiceRepo.findById(practiceId)
                 .orElseThrow(() -> new IllegalArgumentException("Practice not found"));
 

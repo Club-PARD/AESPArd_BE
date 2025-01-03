@@ -18,8 +18,8 @@ import java.util.UUID;
 public class Practice {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO) // Use AUTO or IDENTITY
-    private UUID id;
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
 
     @Column(nullable = false)
     private String practiceName;

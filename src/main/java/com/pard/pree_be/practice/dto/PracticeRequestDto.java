@@ -6,6 +6,7 @@ import java.util.UUID;
 
 @Data
 public class PracticeRequestDto {
+
     private UUID presentationId;
     private String practiceName;
     private String videoKey;

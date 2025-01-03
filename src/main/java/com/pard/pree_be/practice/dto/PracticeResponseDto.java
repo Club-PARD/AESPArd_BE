@@ -10,7 +10,7 @@ import java.util.UUID;
 @Data
 @Builder
 public class PracticeResponseDto {
-    private UUID id;
+    private Long id;
     private String practiceName;
     @JsonProperty("createdAt")
     private LocalDateTime practiceCreatedAt;

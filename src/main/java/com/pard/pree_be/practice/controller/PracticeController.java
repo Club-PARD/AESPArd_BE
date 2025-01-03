@@ -105,7 +105,7 @@ public class PracticeController {
             @ApiResponse(responseCode = "200", description = "Practice deleted successfully."),
             @ApiResponse(responseCode = "404", description = "Practice not found.")
     })
-    public ResponseEntity<Void> deletePractice(@PathVariable UUID practiceId) {
+    public ResponseEntity<Void> deletePractice(@PathVariable Long practiceId) {
         practiceService.deletePractice(practiceId);
         return ResponseEntity.ok().build();
     }
@@ -116,7 +116,7 @@ public class PracticeController {
             @ApiResponse(responseCode = "200", description = "Practices deleted successfully."),
             @ApiResponse(responseCode = "400", description = "Invalid request.")
     })
-    public ResponseEntity<Void> batchDeletePractices(@RequestBody List<UUID> practiceIds) {
+    public ResponseEntity<Void> batchDeletePractices(@RequestBody List<Long> practiceIds) {
         practiceService.batchDeletePractices(practiceIds);
         return ResponseEntity.ok().build();
     }
@@ -127,7 +127,7 @@ public class PracticeController {
             @ApiResponse(responseCode = "200", description = "Practice name updated successfully."),
             @ApiResponse(responseCode = "404", description = "Practice not found.")
     })
-    public ResponseEntity<Void> updatePracticeName(@PathVariable UUID practiceId, @RequestBody String newName) {
+    public ResponseEntity<Void> updatePracticeName(@PathVariable Long practiceId, @RequestBody String newName) {
         // Sanitize the name: remove quotes and trim whitespace
         String sanitizedNewName = newName.replaceAll("^\"|\"$", "").trim();
         practiceService.updatePracticeName(practiceId, sanitizedNewName);
