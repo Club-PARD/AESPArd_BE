@@ -53,8 +53,6 @@ public class Presentation {
     private List<Practice> practices = new ArrayList<>();
 
 
-
-
     public void incrementTotalPractices() {
         this.totalPractices++;
     }

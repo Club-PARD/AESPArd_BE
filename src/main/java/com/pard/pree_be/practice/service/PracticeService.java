@@ -84,6 +84,10 @@ public class PracticeService {
 
         performAnalysis(practice, eyePercentage, idealMin, idealMax);
 
+        // Increment totalPractices in the Presentation entity
+        presentation.incrementTotalPractices();
+        presentationRepo.save(presentation);
+
         return PracticeResponseDto.builder()
                 .id(practice.getId())
                 .practiceName(practice.getPracticeName())
@@ -93,6 +97,7 @@ public class PracticeService {
                 .videoKey(practice.getVideoKey())
                 .build();
     }
+
 
 
     // 가장 최근 밢표에 새로운 연습 추가하기 👍
