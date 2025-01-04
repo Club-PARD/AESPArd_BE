@@ -15,6 +15,7 @@ import com.pard.pree_be.utils.AudioAnalyzer;
 import com.pard.pree_be.utils.S3Service;
 import com.pard.pree_be.utils.TranscriptionProcessor;
 import com.pard.pree_be.utils.TranscriptionService;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -59,15 +60,15 @@ public class PracticeService {
      * Add a new practice to an existing presentation.
      */
     public PracticeResponseDto addPracticeToExistingPresentation(UUID presentationId, String videoKey, int eyePercentage, MultipartFile audioFile) throws IOException {
+        // Fetch the associated presentation
         Presentation presentation = presentationRepo.findById(presentationId)
                 .orElseThrow(() -> new IllegalArgumentException("Presentation not found"));
 
-        int idealMin = (int) presentation.getIdealMinTime();
-        int idealMax = (int) presentation.getIdealMaxTime();
-
+        // Count existing practices to determine the new practice name
         long practiceCount = practiceRepo.countByPresentation_PresentationId(presentationId) + 1;
         String practiceName = practiceCount + "번째 연습";
 
+        // Create the new practice
         Practice practice = Practice.builder()
                 .practiceName(practiceName)
                 .presentation(presentation)
@@ -76,17 +77,19 @@ public class PracticeService {
                 .eyePercentage(eyePercentage)
                 .build();
 
+        // Save the practice
         practiceRepo.save(practice);
 
+        // Save the audio file and update the practice entity
         String audioFilePath = saveAudioFile(audioFile, practice.getId());
         practice.setAudioFilePath(audioFilePath);
         practiceRepo.save(practice);
 
-        performAnalysis(practice, eyePercentage, idealMin, idealMax);
+        // Perform analysis
+        performAnalysis(practice, eyePercentage, (int) presentation.getIdealMinTime(), (int) presentation.getIdealMaxTime());
 
-        // Increment totalPractices in the Presentation entity
-        presentation.incrementTotalPractices();
-        presentationRepo.save(presentation);
+        // Update the presentation's totalScore with the most recent practice's score
+        updatePresentationTotalScore(presentationId);
 
         return PracticeResponseDto.builder()
                 .id(practice.getId())
@@ -99,8 +102,24 @@ public class PracticeService {
     }
 
 
+    @Transactional
+    public void updatePresentationTotalScore(UUID presentationId) {
+        // Fetch the presentation
+        Presentation presentation = presentationRepo.findById(presentationId)
+                .orElseThrow(() -> new IllegalArgumentException("Presentation not found"));
 
-    // 가장 최근 밢표에 새로운 연습 추가하기 👍
+        // Get the most recent practice's score
+        Optional<Practice> mostRecentPractice = practiceRepo.findMostRecentPracticeByPresentationId(presentationId);
+
+        int mostRecentScore = mostRecentPractice.map(Practice::getTotalScore).orElse(0);
+
+        // Update the presentation's totalScore
+        presentation.setTotalScore(mostRecentScore);
+
+        // Save the updated presentation
+        presentationRepo.save(presentation);
+    }
+
     // 가장 최근 밢표에 새로운 연습 추가하기 👍
     public PracticeResponseDto addPracticeToMostRecentlyUpdatedPresentation(
             UUID userId, String videoKey, int eyePercentage, MultipartFile audioFile) throws IOException {
